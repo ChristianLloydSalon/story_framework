@@ -12,3 +12,6 @@ flutter run
 ```
 
 Run the smoke test with `flutter test`.
+
+`lib/media/` holds ready-made adapters for `video_player` and `just_audio`.
+story_framework itself has no player dependency; copy these into your app.

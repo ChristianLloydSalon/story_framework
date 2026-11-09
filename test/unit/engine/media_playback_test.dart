@@ -62,7 +62,10 @@ void main() {
   StoryController create(
     List<StoryItem> items, {
     List<StoryAsset> assets = const [],
-    StoryPlaybackConfig config = const StoryPlaybackConfig(),
+    // Preloading is covered by its own tests; here the most recently created
+    // fake controller is always the current item's.
+    StoryPlaybackConfig config =
+        const StoryPlaybackConfig(mediaPreload: StoryMediaPreload.none),
     bool withFactory = true,
   }) {
     final controller = StoryController(
@@ -312,6 +315,120 @@ void main() {
     c.play();
     await flush();
     expect(stateOf(c).error, isA<PlaybackException>());
+  });
+
+  group('companions and preloading', () {
+    StoryItem mixedItem(String id) => StoryItem(
+          id: id,
+          duration: const FixedItemDuration(Duration(seconds: 10)),
+          elements: [
+            VideoElement(
+              id: '$id-clip',
+              transform: _box,
+              source: const FileStorySource('/clip.mp4'),
+              trimStart: const Duration(seconds: 2),
+            ),
+            AudioElement(
+              id: '$id-music',
+              source: const FileStorySource('/song.mp3'),
+              loop: true,
+            ),
+          ],
+        );
+
+    test('companion media plays and pauses with a fixed-duration item',
+        () async {
+      final c = create([mixedItem('a')]);
+      c.play();
+      await flush();
+      expect(media.created, hasLength(2));
+      final clip = c.mediaFor('a-clip') as FakeMediaController;
+      expect(clip.calls,
+          containsAllInOrder(['initialize', 'seek:0:00:02.000000', 'play']));
+      expect(stateOf(c).duration, s * 10, reason: 'companions do not drive');
+
+      clip.calls.clear();
+      c.pause();
+      await flush();
+      expect(clip.calls, ['pause']);
+      c.seekTo(s * 3);
+      await flush();
+      expect(clip.calls, contains('seek:0:00:05.000000'));
+    });
+
+    test('a failing companion is reported but does not stop the story',
+        () async {
+      media.onCreate = (controller) {
+        if (controller.element.id == 'a-music') {
+          controller.initialization = Completer<void>()
+            ..completeError(const MediaInitializationException('no codec'));
+        }
+      };
+      final errors = <StoryPlaybackEvent>[];
+      final c = create([mixedItem('a')]);
+      c.events.listen(errors.add);
+      c.play();
+      await flush();
+      expect(stateOf(c).status, StoryPlaybackStatus.playing);
+      expect(errors.whereType<StoryPlaybackErrorEvent>(), hasLength(1));
+      expect(c.mediaFor('a-music'), isNull);
+      expect(c.mediaFor('a-clip'), isNotNull);
+    });
+
+    test('maxActiveMedia caps controllers per item', () async {
+      final c = create(
+        [mixedItem('a')],
+        config: const StoryPlaybackConfig(
+          mediaPreload: StoryMediaPreload.none,
+          maxActiveMedia: 1,
+        ),
+      );
+      c.play();
+      await flush();
+      expect(media.created, hasLength(1));
+    });
+
+    test('the next item is preloaded and its controller reused', () async {
+      final c = create(
+        [videoItem('a'), videoItem('b'), videoItem('c')],
+        config: const StoryPlaybackConfig(),
+      );
+      c.play();
+      await flush();
+      expect(media.created.map((m) => m.element.id), ['a-video', 'b-video']);
+      final preloaded = media.created.last;
+      expect(preloaded.calls, ['initialize'], reason: 'initialized ahead');
+
+      c.next();
+      await flush();
+      expect(c.currentMedia, same(preloaded), reason: 'reused, not recreated');
+      expect(media.created.map((m) => m.element.id),
+          ['a-video', 'b-video', 'c-video']);
+      expect(media.created.first.disposed, isTrue);
+    });
+
+    test('skipping past a preloaded item disposes its controller', () async {
+      final c = create(
+        [videoItem('a'), videoItem('b'), videoItem('c'), videoItem('d')],
+        config: const StoryPlaybackConfig(),
+      );
+      c.play();
+      await flush();
+      final preloadedB = media.created.last;
+      c.jumpToItem('d');
+      await flush();
+      expect(preloadedB.disposed, isTrue);
+      expect(c.upcomingLocation, isNull);
+    });
+
+    test('dispose releases preloaded controllers too', () async {
+      final c = create([videoItem('a'), videoItem('b')],
+          config: const StoryPlaybackConfig());
+      c.play();
+      await flush();
+      await c.dispose();
+      expect(media.created.every((m) => m.disposed), isTrue);
+    });
   });
 
   test('dispose waits for media disposal', () async {

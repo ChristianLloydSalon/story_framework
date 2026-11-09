@@ -23,6 +23,7 @@ import '../../gestures/handlers/default_gesture_handlers.dart';
 import '../../gestures/story_gesture_registry.dart';
 import '../../interactions/story_interaction_controller.dart';
 import '../../media/contracts/story_media_controller.dart';
+import '../../media/contracts/story_visual_media.dart';
 import '../../overlays/story_overlay.dart';
 import '../../rendering/options/story_render_options.dart';
 import '../../rendering/registry/story_renderer_registry.dart';
@@ -31,6 +32,7 @@ import '../controls/story_viewer_controls.dart';
 import '../gestures/story_viewer_gesture_layer.dart';
 import '../layouts/story_viewer_layout.dart';
 import '../progress/story_progress_bar.dart';
+import 'story_image_prefetcher.dart';
 
 /// Builds a viewer overlay (header, footer, progress, loading) for the
 /// current playback.
@@ -393,11 +395,20 @@ class _StoryViewerState extends State<StoryViewer> {
       overlays: widget.overlays,
     );
 
-    return StoryInteractionScope(
-      controller: interactions,
-      holdPlayback: () => controller.acquirePause(StoryPauseReason.interaction),
-      child: widget.layoutBuilder?.call(context, parts) ??
-          StoryViewerDefaultLayout(parts: parts, config: widget.config),
+    return StoryMediaScope(
+      lookup: controller.mediaFor,
+      changes: controller.mediaChanges,
+      child: StoryInteractionScope(
+        controller: interactions,
+        holdPlayback: () =>
+            controller.acquirePause(StoryPauseReason.interaction),
+        child: StoryImagePrefetcher(
+          controller: controller,
+          options: widget.renderOptions,
+          child: widget.layoutBuilder?.call(context, parts) ??
+              StoryViewerDefaultLayout(parts: parts, config: widget.config),
+        ),
+      ),
     );
   }
 }

@@ -10,7 +10,7 @@ a small number of public entry points.
 |---|---|---|---|
 | Core | `lib/src/core/` | ✅ | Value types, sources, enums, errors, playback state, JSON utilities |
 | Composition | `lib/src/composition/` | ✅ | Document model, elements, serialization, validation |
-| Media | `lib/src/media/` | Contracts only | Media controller contracts; integrations come in Phase 6 |
+| Media | `lib/src/media/` | ✅ | Player-independent media contracts, media scope, cache, resource loader |
 | Engine | `lib/src/engine/` | ✅ | Headless playback controller, timeline, navigation, lifecycle |
 | Configuration | `lib/src/configuration/` | Playback only | Immutable configuration objects |
 | Rendering | `lib/src/rendering/` | ✅ | Renderer contract, registry, built-in renderers, item views |

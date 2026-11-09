@@ -86,7 +86,9 @@ abstract interface class StoryMediaController {
 
   /// Prepares the media. Throws a [MediaInitializationException] on failure.
   ///
-  /// Calling it again after it completed has no effect.
+  /// Must be idempotent: concurrent calls share one initialization, and
+  /// calling it again after it completed has no effect. This lets the engine
+  /// preload the next item's media and later adopt the same controller.
   Future<void> initialize();
 
   /// Starts or resumes playback.

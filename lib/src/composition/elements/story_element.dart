@@ -249,6 +249,7 @@ final class VideoElement extends TimedMediaElement {
     required super.transform,
     required super.source,
     this.fit = StoryFit.cover,
+    this.poster,
     super.volume,
     super.muted,
     super.loop,
@@ -269,12 +270,16 @@ final class VideoElement extends TimedMediaElement {
   /// How the video fills the element box.
   final StoryFit fit;
 
+  /// An image shown while the video loads and wherever it cannot play (for
+  /// example in the editor), or `null`.
+  final StorySource? poster;
+
   @override
   String get type => typeId;
 
   @override
   List<Object?> get _props =>
-      [source, fit, volume, muted, loop, trimStart, trimEnd];
+      [source, fit, poster, volume, muted, loop, trimStart, trimEnd];
 
   /// Returns a copy with the given fields replaced.
   VideoElement copyWith({
@@ -282,6 +287,7 @@ final class VideoElement extends TimedMediaElement {
     StoryTransform? transform,
     StorySource? source,
     StoryFit? fit,
+    StorySource? poster,
     double? volume,
     bool? muted,
     bool? loop,
@@ -300,6 +306,7 @@ final class VideoElement extends TimedMediaElement {
       transform: transform ?? this.transform,
       source: source ?? this.source,
       fit: fit ?? this.fit,
+      poster: poster ?? this.poster,
       volume: volume ?? this.volume,
       muted: muted ?? this.muted,
       loop: loop ?? this.loop,

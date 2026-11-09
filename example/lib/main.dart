@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:story_framework/story_framework.dart';
 
+import 'media/just_audio_adapter.dart';
+import 'media/video_player_adapter.dart';
 import 'sample_stories.dart';
 
 void main() => runApp(const StoryExampleApp());
@@ -139,6 +141,12 @@ class StoryViewerPage extends StatelessWidget {
         playbackConfig: const StoryPlaybackConfig(
           defaultItemDuration: Duration(seconds: 6),
         ),
+        // Player adapters live in the app; story_framework has no player
+        // dependency. See lib/media/.
+        mediaFactories: const [
+          VideoPlayerStoryMediaFactory(),
+          JustAudioStoryMediaFactory(),
+        ],
         footerBuilder: (context, controller) => const ReplyBar(),
         overlays: [
           StoryOverlay(

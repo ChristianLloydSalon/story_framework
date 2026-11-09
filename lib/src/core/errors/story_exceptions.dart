@@ -124,6 +124,12 @@ class CacheException extends StoryException {
   const CacheException(super.message, {super.cause});
 }
 
+/// An operation was cancelled before it finished.
+class StoryCancelledException extends StoryException {
+  /// Creates the exception.
+  const StoryCancelledException([super.message = 'Cancelled']);
+}
+
 /// A configuration value is invalid.
 class ConfigurationException extends StoryException {
   /// Creates the exception.

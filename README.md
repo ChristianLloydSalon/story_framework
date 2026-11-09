@@ -7,8 +7,9 @@ state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
 > serialization, validation, the headless playback engine, rendering, a
-> customizable story viewer, interactive stickers, and the story editor are
-> implemented. Media integrations and the export pipeline are planned; see
+> customizable story viewer, interactive stickers, the story editor, and
+> player-independent video and audio support are implemented. The export
+> pipeline is planned; see
 > [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
@@ -42,6 +43,11 @@ state-management library.
   limits; selection and multi-selection; transform handles, snapping, and
   alignment; layer management; extensible tools; a timeline; keyboard
   shortcuts; and accessible panels for every canvas gesture.
+- **Video and audio, with no player dependency**: plug in any player through
+  small adapters (ready-made `video_player` and `just_audio` adapters are in
+  the example). Companion media sync, next-item preloading, bounded
+  resources, image prefetching, and an optional memory byte cache with
+  shared, cancellable requests.
 - **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
   using a pluggable renderer registry. Built-in renderers cover images, text,
   stickers, shapes, and drawings, with app-defined widget and custom elements.
@@ -186,7 +192,7 @@ The export entry point will be added with its module.
 | 3 | Rendering foundation | ✅ |
 | 4 | Story viewer | ✅ |
 | 5 | Advanced viewer customization (gesture and transition registries, overlays) | ✅ |
-| 6 | Media integrations and caching | Planned (deferred) |
+| 6 | Media integrations and caching | ✅ |
 | 7 | Interactive content | ✅ |
 | 8–10 | Story editor, tools, timeline, undo/redo | ✅ |
 | 11 | Export pipeline | Planned |
@@ -205,5 +211,6 @@ The export entry point will be added with its module.
 - [Overlay system](doc/OVERLAY_SYSTEM.md)
 - [Interactive content](doc/INTERACTIVE_CONTENT.md)
 - [Editor system](doc/EDITOR_SYSTEM.md)
+- [Media system](doc/MEDIA_SYSTEM.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

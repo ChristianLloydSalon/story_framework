@@ -19,4 +19,5 @@ export 'src/viewer/controls/story_viewer_controls.dart';
 export 'src/viewer/gestures/story_viewer_gesture_layer.dart';
 export 'src/viewer/layouts/story_viewer_layout.dart';
 export 'src/viewer/progress/story_progress_bar.dart';
+export 'src/viewer/viewer/story_image_prefetcher.dart';
 export 'src/viewer/viewer/story_viewer.dart';

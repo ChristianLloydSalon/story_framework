@@ -128,6 +128,15 @@ class StoryController {
 
   StoryMediaController? _media;
   TimedMediaElement? _mediaElement;
+
+  /// Media that plays alongside the item without driving its duration.
+  final Map<String, _CompanionMedia> _companions = {};
+
+  /// Controllers created ahead of time for the next item, keyed by
+  /// `itemId/elementId`.
+  final Map<String, StoryMediaController> _preloaded = {};
+
+  final _MediaChanges _mediaChanges = _MediaChanges();
   // Cancelled in _teardownMedia whenever the media changes or on dispose.
   // ignore: cancel_subscriptions
   StreamSubscription<StoryMediaSnapshot>? _mediaSubscription;
@@ -167,6 +176,25 @@ class StoryController {
   /// Owned by this controller; do not dispose it. It changes when the item
   /// changes, so read it again after every location change.
   StoryMediaController? get currentMedia => _media;
+
+  /// The live media controller of the current item's element [elementId]
+  /// (the duration-driving one or a companion), or `null`.
+  ///
+  /// Owned by this controller; renderers display it but must not dispose it.
+  StoryMediaController? mediaFor(String elementId) {
+    if (_mediaElement?.id == elementId) return _media;
+    return _companions[elementId]?.controller;
+  }
+
+  /// Notifies when the set of live media controllers changes.
+  Listenable get mediaChanges => _mediaChanges;
+
+  /// The item playback moves to next, or `null` at the end. Useful for
+  /// prefetching.
+  StoryItemLocation? get upcomingLocation {
+    final location = _location;
+    return location == null ? null : _nextLocation(location);
+  }
 
   /// Moments such as items starting and completing.
   Stream<StoryPlaybackEvent> get events => _events.stream;
@@ -341,6 +369,12 @@ class StoryController {
     if (_phase == _Phase.ready && media != null && element != null) {
       _guard(media.seekTo(element.trimStart + target));
     }
+    for (final companion in _companions.values) {
+      if (companion.ready) {
+        _guard(
+            companion.controller.seekTo(companion.element.trimStart + target));
+      }
+    }
     _sync();
   }
 
@@ -356,6 +390,9 @@ class StoryController {
     _speed = speed;
     final media = _media;
     if (media != null) _guard(media.setPlaybackSpeed(speed));
+    for (final companion in _companions.values) {
+      if (companion.ready) _guard(companion.controller.setPlaybackSpeed(speed));
+    }
     _emit();
   }
 
@@ -369,7 +406,9 @@ class StoryController {
     _generation++;
     _ticker?.dispose();
     _teardownMedia();
+    _discardPreloaded(keepItemId: null);
     _state.dispose();
+    _mediaChanges.dispose();
     unawaited(_events.close());
     await Future.wait(_pendingDisposals.toList());
   }
@@ -444,7 +483,9 @@ class StoryController {
     _consecutiveErrors = 0;
     _anchorPosition = _clamp(_anchorPosition);
     _anchorTime = _clock.elapsed;
+    _startCompanions(generation, item);
     _sync();
+    _preloadNext();
   }
 
   /// Creates and initializes the driving media; returns the item duration.
@@ -472,11 +513,11 @@ class StoryController {
           'No media controller factory supports element "${element.id}"');
     }
 
-    final media =
-        factory.create(element, _document.resolveSource(element.source));
+    final media = _obtainMedia(item, element, factory);
     // Owned from here on: navigation or disposal tears it down.
     _media = media;
     _mediaElement = element;
+    _mediaChanges.changed();
     _mediaSubscription = media.snapshots
         .listen((snapshot) => _onMediaSnapshot(generation, snapshot));
 
@@ -623,9 +664,18 @@ class StoryController {
 
     _setTimelineRunning(timelineShouldRun);
     final media = _media;
-    if (media != null && mediaShouldPlay != _mediaPlaying) {
+    if (mediaShouldPlay != _mediaPlaying) {
       _mediaPlaying = mediaShouldPlay;
-      _guard(mediaShouldPlay ? media.play() : media.pause());
+      if (media != null) {
+        _guard(mediaShouldPlay ? media.play() : media.pause());
+      }
+      for (final companion in _companions.values) {
+        if (companion.ready) {
+          _guard(mediaShouldPlay
+              ? companion.controller.play()
+              : companion.controller.pause());
+        }
+      }
     }
     _emit();
   }
@@ -737,6 +787,12 @@ class StoryController {
   }
 
   void _teardownMedia() {
+    final hadMedia = _media != null || _companions.isNotEmpty;
+    for (final companion in _companions.values) {
+      unawaited(companion.subscription.cancel());
+      _scheduleDisposal(companion.controller);
+    }
+    _companions.clear();
     final subscription = _mediaSubscription;
     if (subscription != null) unawaited(subscription.cancel());
     _mediaSubscription = null;
@@ -744,10 +800,178 @@ class StoryController {
     _media = null;
     _mediaElement = null;
     _mediaPlaying = false;
-    if (media == null) return;
+    if (media != null) _scheduleDisposal(media);
+    if (hadMedia && !_disposed) _mediaChanges.changed();
+  }
+
+  void _scheduleDisposal(StoryMediaController media) {
     final disposal = _disposeMedia(media);
     _pendingDisposals.add(disposal);
     unawaited(disposal.whenComplete(() => _pendingDisposals.remove(disposal)));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Companion media and preloading
+  // ---------------------------------------------------------------------------
+
+  static String _mediaKey(StoryItem item, StoryElement element) =>
+      '${item.id}/${element.id}';
+
+  StoryMediaControllerFactory? _factoryFor(StoryElement element) =>
+      _mediaFactories.firstWhereOrNull((f) => f.supports(element));
+
+  /// A preloaded controller for [element] if one exists, otherwise a new one.
+  StoryMediaController _obtainMedia(
+    StoryItem item,
+    TimedMediaElement element,
+    StoryMediaControllerFactory factory,
+  ) {
+    final preloaded = _preloaded.remove(_mediaKey(item, element));
+    return preloaded ??
+        factory.create(element, _document.resolveSource(element.source));
+  }
+
+  /// The time-based elements of [item] that get controllers, within budget.
+  List<TimedMediaElement> _mediaElementsOf(StoryItem item) => [
+        for (final element in item.elements)
+          if (element is TimedMediaElement &&
+              element.visible &&
+              _factoryFor(element) != null)
+            element,
+      ].take(config.maxActiveMedia).toList();
+
+  void _startCompanions(int generation, StoryItem item) {
+    final driverId = _mediaElement?.id;
+    var budget = config.maxActiveMedia - (driverId == null ? 0 : 1);
+    for (final element in _mediaElementsOf(item)) {
+      if (budget <= 0) break;
+      if (element.id == driverId || _companions.containsKey(element.id)) {
+        continue;
+      }
+      final factory = _factoryFor(element);
+      if (factory == null) continue;
+      budget--;
+      final StoryMediaController controller;
+      try {
+        controller = _obtainMedia(item, element, factory);
+      } catch (error) {
+        _reportCompanionError(element, error);
+        continue;
+      }
+      final companion = _CompanionMedia(
+        element,
+        controller,
+        controller.snapshots.listen(
+          (snapshot) => _onCompanionSnapshot(generation, element.id, snapshot),
+        ),
+      );
+      _companions[element.id] = companion;
+      unawaited(_initializeCompanion(generation, companion));
+    }
+    if (_companions.isNotEmpty) _mediaChanges.changed();
+  }
+
+  Future<void> _initializeCompanion(
+      int generation, _CompanionMedia companion) async {
+    final controller = companion.controller;
+    final element = companion.element;
+    try {
+      await controller.initialize();
+      if (!_isCurrent(generation)) return;
+      await controller.setPlaybackSpeed(_speed);
+      await controller.setVolume(element.muted ? 0 : element.volume);
+      await controller.seekTo(element.trimStart + _currentPosition());
+      if (!_isCurrent(generation)) return;
+      companion.ready = true;
+      if (_mediaPlaying) await controller.play();
+    } catch (error) {
+      if (_isCurrent(generation)) _dropCompanion(element.id, error);
+    }
+  }
+
+  void _onCompanionSnapshot(
+      int generation, String elementId, StoryMediaSnapshot snapshot) {
+    if (!_isCurrent(generation)) return;
+    final companion = _companions[elementId];
+    if (companion == null) return;
+    final element = companion.element;
+    switch (snapshot.status) {
+      case StoryMediaStatus.error:
+        _dropCompanion(
+            elementId,
+            snapshot.error ??
+                const MediaInitializationException('Media failed'));
+      case StoryMediaStatus.completed when element.loop && _mediaPlaying:
+        _guard(companion.controller
+            .seekTo(element.trimStart)
+            .then((_) => companion.controller.play()));
+      case _:
+        final end = element.trimEnd;
+        if (end != null && snapshot.position >= end && _mediaPlaying) {
+          _guard(element.loop
+              ? companion.controller.seekTo(element.trimStart)
+              : companion.controller.pause());
+        }
+    }
+  }
+
+  /// Companion failures are reported but never stop the story.
+  void _dropCompanion(String elementId, Object error) {
+    final companion = _companions.remove(elementId);
+    if (companion == null) return;
+    unawaited(companion.subscription.cancel());
+    _scheduleDisposal(companion.controller);
+    _reportCompanionError(companion.element, error);
+    _mediaChanges.changed();
+  }
+
+  void _reportCompanionError(StoryElement element, Object error) {
+    _addEvent(StoryPlaybackErrorEvent(
+      error is StoryException
+          ? error
+          : MediaInitializationException(
+              'Media for element "${element.id}" failed',
+              cause: error),
+      _location,
+    ));
+  }
+
+  /// Creates and initializes the next item's media ahead of time.
+  void _preloadNext() {
+    if (config.mediaPreload == StoryMediaPreload.none) return;
+    final next = upcomingLocation;
+    final item = next == null ? null : _document.itemAt(next);
+    _discardPreloaded(keepItemId: item?.id);
+    if (item == null) return;
+    for (final element in _mediaElementsOf(item)) {
+      final key = _mediaKey(item, element);
+      if (_preloaded.containsKey(key)) continue;
+      final factory = _factoryFor(element);
+      if (factory == null) continue;
+      try {
+        final controller =
+            factory.create(element, _document.resolveSource(element.source));
+        _preloaded[key] = controller;
+        // Failures surface when the item is played and initializes again.
+        unawaited(controller.initialize().then<void>((_) {}, onError: (_) {}));
+      } catch (_) {
+        // A source that cannot be created now fails again, visibly, when the
+        // item is reached.
+      }
+    }
+  }
+
+  /// Disposes preloaded controllers that do not belong to [keepItemId].
+  void _discardPreloaded({required String? keepItemId}) {
+    final prefix = keepItemId == null ? null : '$keepItemId/';
+    final stale = [
+      for (final key in _preloaded.keys)
+        if (prefix == null || !key.startsWith(prefix)) key,
+    ];
+    for (final key in stale) {
+      final controller = _preloaded.remove(key);
+      if (controller != null) _scheduleDisposal(controller);
+    }
   }
 
   /// Disposal is deferred to a microtask: teardown often happens inside the
@@ -831,4 +1055,20 @@ final class _ControllerHold implements StoryPlaybackHold {
     _active = false;
     _controller._releaseHold(_reason);
   }
+}
+
+/// A media controller playing alongside the item.
+final class _CompanionMedia {
+  _CompanionMedia(this.element, this.controller, this.subscription);
+
+  final TimedMediaElement element;
+  final StoryMediaController controller;
+  final StreamSubscription<StoryMediaSnapshot> subscription;
+
+  /// Whether initialization finished and commands may be sent.
+  bool ready = false;
+}
+
+final class _MediaChanges extends ChangeNotifier {
+  void changed() => notifyListeners();
 }

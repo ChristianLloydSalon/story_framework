@@ -5,6 +5,7 @@
 library;
 
 export 'composition.dart';
+export 'media.dart';
 export 'src/interactions/story_interaction_controller.dart';
 export 'src/interactions/story_interaction_state.dart';
 export 'src/rendering/contracts/story_element_renderer.dart';
@@ -20,4 +21,5 @@ export 'src/rendering/renderers/interactive/interaction_widgets.dart';
 export 'src/rendering/renderers/interactive/question_view.dart';
 export 'src/rendering/renderers/interactive/slider_view.dart';
 export 'src/rendering/renderers/interactive/story_interactive_renderer.dart';
+export 'src/rendering/renderers/video_renderer.dart';
 export 'src/rendering/widgets/story_item_view.dart';

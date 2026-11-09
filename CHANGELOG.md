@@ -1,5 +1,24 @@
 ## Unreleased
 
+- Video and audio support with no player dependency:
+  - `StoryVisualMediaController` for media with frames, and
+    `StoryMediaScope` so renderers find the engine's live controllers.
+  - Engine companion media: other videos and audio on an item play in sync
+    with the timeline; their failures are reported without stopping the
+    story.
+  - Next-item media preloading (`StoryPlaybackConfig.mediaPreload`) with
+    controller reuse, and a per-item cap (`maxActiveMedia`).
+  - `StoryController.mediaFor`, `mediaChanges`, and `upcomingLocation`.
+  - `StoryVideoRenderer`: shows the engine's frames, rebuilds only on status
+    changes, and falls back to the new `VideoElement.poster` or opt-in live
+    previews (`StoryRenderOptions.previewMediaFactories`).
+  - The viewer prefetches the next item's images.
+  - `MemoryStoryCache`, `StoryCacheProvider`, `StoryResourceLoader` (shared
+    and cancellable requests, bounded concurrency), `StoryCancellationToken`,
+    `createStoryHttpFetcher`, and `StoryCachedImageProvider`;
+    `DefaultStoryImageResolver.networkLoader`.
+  - `StoryCancelledException`.
+  - Example: `video_player` and `just_audio` adapters and a video story.
 - Story editor (`package:story_framework/editor.dart`):
   - `StoryEditorController`: current item, selection and multi-selection,
     element, layer, alignment, distribution, flip, rename, lock, and

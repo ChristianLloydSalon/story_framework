@@ -105,6 +105,26 @@ StoryDocument sampleDocument() {
               ),
             ],
           ),
+          StoryItem(
+            id: 'grace-video',
+            // Lasts as long as the clip, at most 10 seconds; 6 seconds if the
+            // clip cannot load.
+            duration: const MediaItemDuration(
+              elementId: 'grace-video-clip',
+              maxDuration: Duration(seconds: 10),
+              fallback: Duration(seconds: 6),
+            ),
+            elements: [
+              VideoElement(
+                id: 'grace-video-clip',
+                transform: _box(540, 960, 1080, 1920),
+                source: NetworkStorySource(Uri.parse(
+                    'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4')),
+                muted: true,
+              ),
+              _text('grace-video-caption', 'Video stories', y: 1600),
+            ],
+          ),
           _titleCard(
             id: 'grace-3',
             colors: const [StoryColor(0xFFF7971E), StoryColor(0xFFFFD200)],

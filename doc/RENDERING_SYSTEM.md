@@ -95,6 +95,7 @@ The registry is a `ChangeNotifier`, so views rebuild when renderers change.
 | Id | Elements | Notes |
 |---|---|---|
 | `image` | `ImageElement` | Fit, loading and error states |
+| `video` | `VideoElement` | Frames of the engine's controller, poster, optional previews (see [MEDIA_SYSTEM.md](MEDIA_SYSTEM.md)) |
 | `text` | `TextElement` | Style, background, padding, shadows, outline stroke |
 | `sticker` | `StickerElement` | Emoji and image stickers; provider stickers via `customBuilders` |
 | `shape` | `ShapeElement` | Rectangle (rounded), ellipse, line, triangle |
@@ -103,8 +104,7 @@ The registry is a `ChangeNotifier`, so views rebuild when renderers change.
 
 `WidgetElement`s need a `StoryWidgetElementRenderer` with builders keyed by
 `widgetType`. `CustomElement`s need a `StoryCustomElementRenderer`, or a
-`StoryElementRenderer` subclass, for their `customType`. Video rendering
-arrives with media integrations (Phase 6).
+`StoryElementRenderer` subclass, for their `customType`.
 
 ## Unsupported content and errors
 

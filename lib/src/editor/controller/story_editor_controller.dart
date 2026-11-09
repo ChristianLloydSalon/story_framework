@@ -947,6 +947,7 @@ class StoryEditorController extends ChangeNotifier {
           transform: element.transform,
           source: element.source,
           fit: element.fit,
+          poster: element.poster,
           volume: element.volume,
           muted: element.muted,
           loop: element.loop,

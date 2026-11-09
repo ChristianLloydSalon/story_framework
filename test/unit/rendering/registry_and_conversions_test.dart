@@ -38,6 +38,7 @@ void main() {
       final registry = StoryRendererRegistry.withDefaults();
       expect(registry.ids, [
         'image',
+        'video',
         'text',
         'sticker',
         'shape',

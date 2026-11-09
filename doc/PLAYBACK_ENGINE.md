@@ -102,8 +102,10 @@ references already resolved. The engine:
 - advances when the media completes;
 - routes media errors to the error policy.
 
-Other time-based elements in an item (for example background audio on a
-fixed-duration item) and preloading arrive with media integrations (Phase 6).
+Other time-based elements in the item play as companions in sync with the
+timeline, and the next item's media is preloaded and reused on arrival. See
+[MEDIA_SYSTEM.md](MEDIA_SYSTEM.md) for companions, preloading, and resource
+limits (`mediaPreload`, `maxActiveMedia`).
 
 ## Asynchrony and cancellation
 

@@ -173,6 +173,7 @@ StoryDocument sampleDocument() {
                 id: 'vid',
                 transform: box(540, 960, 1080, 1920),
                 source: const FileStorySource('/tmp/clip.mp4'),
+                poster: const ReferenceStorySource('hero'),
                 volume: 0.7,
                 muted: true,
                 loop: true,

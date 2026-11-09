@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../composition/elements/story_element.dart';
+import '../../media/contracts/story_media_controller.dart';
 import '../media/story_image_resolver.dart';
 
 /// Builds the placeholder shown while [element] loads.
@@ -30,6 +31,7 @@ final class StoryRenderOptions {
     this.unsupportedBuilder,
     this.onError,
     this.textScaler = TextScaler.noScaling,
+    this.previewMediaFactories = const [],
   });
 
   /// Turns image sources into image providers.
@@ -57,6 +59,14 @@ final class StoryRenderOptions {
   /// the user's accessibility setting instead.
   final TextScaler textScaler;
 
+  /// Media factories for video previews where no playback engine provides a
+  /// controller (for example on the editor canvas).
+  ///
+  /// Empty by default: previews then show the video's poster. Each preview
+  /// creates and owns a paused controller showing the first frame, so enable
+  /// this only where few videos are visible at once.
+  final List<StoryMediaControllerFactory> previewMediaFactories;
+
   /// Reports [error] for [element] through [onError] or
   /// [FlutterError.reportError].
   void reportError(StoryElement element, Object error, [StackTrace? stack]) {
@@ -82,6 +92,7 @@ final class StoryRenderOptions {
     StoryUnsupportedBuilder? unsupportedBuilder,
     StoryRenderErrorCallback? onError,
     TextScaler? textScaler,
+    List<StoryMediaControllerFactory>? previewMediaFactories,
   }) {
     return StoryRenderOptions(
       imageResolver: imageResolver ?? this.imageResolver,
@@ -90,6 +101,8 @@ final class StoryRenderOptions {
       unsupportedBuilder: unsupportedBuilder ?? this.unsupportedBuilder,
       onError: onError ?? this.onError,
       textScaler: textScaler ?? this.textScaler,
+      previewMediaFactories:
+          previewMediaFactories ?? this.previewMediaFactories,
     );
   }
 }

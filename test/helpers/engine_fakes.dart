@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:story_framework/engine.dart';
 
 /// A clock that only moves when told to.
@@ -85,7 +86,7 @@ Future<void> flush() async {
 }
 
 /// A scriptable media controller that records every command.
-final class FakeMediaController implements StoryMediaController {
+class FakeMediaController implements StoryMediaController {
   FakeMediaController(this.element, this.source, {this.mediaDuration});
 
   final StoryElement element;
@@ -118,10 +119,11 @@ final class FakeMediaController implements StoryMediaController {
   Future<void> initialize() async {
     calls.add('initialize');
     await initialization.future;
-    _snapshot = _snapshot.copyWith(
+    // Real players publish their ready state; so does the fake.
+    emit(_snapshot.copyWith(
       status: StoryMediaStatus.ready,
       duration: mediaDuration,
-    );
+    ));
   }
 
   @override
@@ -148,11 +150,34 @@ final class FakeMediaController implements StoryMediaController {
   }
 }
 
+/// A fake video controller that can show frames.
+class FakeVisualMedia extends FakeMediaController
+    implements StoryVisualMediaController {
+  FakeVisualMedia(super.element, super.source, {super.mediaDuration});
+
+  int viewBuilds = 0;
+
+  @override
+  StorySize? get naturalSize => const StorySize(160, 90);
+
+  @override
+  Widget buildView(BuildContext context) {
+    viewBuilds++;
+    return const Text('video frames', textDirection: TextDirection.ltr);
+  }
+}
+
 /// Creates [FakeMediaController]s for time-based elements and remembers them.
 final class FakeMediaFactory implements StoryMediaControllerFactory {
-  FakeMediaFactory({this.mediaDuration = const Duration(seconds: 10)});
+  FakeMediaFactory({
+    this.mediaDuration = const Duration(seconds: 10),
+    this.visual = false,
+  });
 
   final Duration? mediaDuration;
+
+  /// Whether video elements get [FakeVisualMedia].
+  final bool visual;
   final List<FakeMediaController> created = [];
 
   /// Called on each new controller before it is returned.
@@ -171,8 +196,9 @@ final class FakeMediaFactory implements StoryMediaControllerFactory {
 
   @override
   StoryMediaController create(StoryElement element, StorySource source) {
-    final controller =
-        FakeMediaController(element, source, mediaDuration: mediaDuration);
+    final controller = visual && element is VideoElement
+        ? FakeVisualMedia(element, source, mediaDuration: mediaDuration)
+        : FakeMediaController(element, source, mediaDuration: mediaDuration);
     onCreate?.call(controller);
     created.add(controller);
     return controller;

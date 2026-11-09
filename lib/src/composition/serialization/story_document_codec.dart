@@ -271,6 +271,8 @@ final class _Encoder {
       VideoElement() => {
           'source': source(element.source, '$path.source'),
           'fit': element.fit.name,
+          if (element.poster case final poster?)
+            'poster': source(poster, '$path.poster'),
           ..._timedMedia(element),
         },
       AudioElement() => {
@@ -671,6 +673,7 @@ final class _Decoder {
           transform: transform,
           source: source(json.child('source')),
           fit: json.enumValue('fit', StoryFit.values, StoryFit.cover),
+          poster: json.has('poster') ? source(json.child('poster')) : null,
           volume: json.number('volume', fallback: 1),
           muted: json.boolean('muted', fallback: false),
           loop: json.boolean('loop', fallback: false),

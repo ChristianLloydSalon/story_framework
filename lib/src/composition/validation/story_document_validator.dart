@@ -263,8 +263,9 @@ final class _Context {
     switch (element) {
       case ImageElement(:final source):
         _source(source, '$path.source');
-      case VideoElement():
+      case VideoElement(:final poster):
         _timedMedia(element, path);
+        if (poster != null) _source(poster, '$path.poster');
       case AudioElement():
         _timedMedia(element, path);
       case TextElement(:final text, :final style):
