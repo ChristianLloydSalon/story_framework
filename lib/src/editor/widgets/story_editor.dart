@@ -10,6 +10,7 @@ import '../controller/story_editor_controller.dart';
 import '../tools/builtin_tools.dart';
 import '../tools/story_editor_tool.dart';
 import 'editor_controls.dart';
+import 'editor_icons.dart';
 
 /// Builds one part of the editor UI.
 typedef StoryEditorPartBuilder = Widget Function(
@@ -327,15 +328,19 @@ class _StoryEditorState extends State<StoryEditor> {
 /// The default editor arrangement.
 ///
 /// Wide layouts (at least [wideBreakpoint] pixels) show the canvas with a
-/// side panel of layers and properties; narrow layouts stack the properties
-/// under the canvas. The timeline is always at the bottom.
-class StoryEditorDefaultLayout extends StatelessWidget {
+/// side panel of layers and properties. Narrow layouts (phones) give the
+/// canvas most of the screen and put properties and layers in a collapsible
+/// sheet below it, which opens when something is selected and closes when
+/// the selection is cleared. The timeline is at the bottom, except on narrow
+/// layouts while the sheet is open.
+class StoryEditorDefaultLayout extends StatefulWidget {
   /// Creates the default layout.
   const StoryEditorDefaultLayout({
     required this.parts,
     this.wideBreakpoint = 720,
     this.sidePanelWidth = 320,
     this.timelineHeight = 176,
+    this.compactTimelineHeight = 132,
     super.key,
   });
 
@@ -348,17 +353,96 @@ class StoryEditorDefaultLayout extends StatelessWidget {
   /// Width of the side panel in wide layouts.
   final double sidePanelWidth;
 
-  /// Height of the timeline.
+  /// Height of the timeline in wide layouts.
   final double timelineHeight;
+
+  /// Height of the timeline in narrow layouts.
+  final double compactTimelineHeight;
+
+  @override
+  State<StoryEditorDefaultLayout> createState() =>
+      _StoryEditorDefaultLayoutState();
+}
+
+/// Which part the narrow layout's sheet shows.
+enum _SheetTab { edit, layers }
+
+class _StoryEditorDefaultLayoutState extends State<StoryEditorDefaultLayout> {
+  static const double _gap = 10;
+
+  _SheetTab _tab = _SheetTab.edit;
+  bool _open = false;
+  bool _hadSelection = false;
+  bool _wasDrawing = false;
+  StoryEditorController? _listening;
+
+  @override
+  void initState() {
+    super.initState();
+    _listen();
+  }
+
+  @override
+  void didUpdateWidget(StoryEditorDefaultLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _listen();
+  }
+
+  @override
+  void dispose() {
+    _listening?.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _listen() {
+    final controller = widget.parts.controller;
+    if (identical(_listening, controller)) return;
+    _listening?.removeListener(_onControllerChanged);
+    controller.addListener(_onControllerChanged);
+    _listening = controller;
+    _hadSelection = controller.editableSelection.isNotEmpty;
+    _wasDrawing = controller.activeToolId == StoryDrawTool.toolId;
+    _open = _hadSelection || _wasDrawing;
+  }
+
+  /// Opens the sheet on Edit when editing starts; closes it again when the
+  /// selection is cleared, unless the user is browsing layers.
+  void _onControllerChanged() {
+    final controller = widget.parts.controller;
+    final hasSelection = controller.editableSelection.isNotEmpty;
+    final drawing = controller.activeToolId == StoryDrawTool.toolId;
+    final starts =
+        (hasSelection && !_hadSelection) || (drawing && !_wasDrawing);
+    final ends = !hasSelection && !drawing && (_hadSelection || _wasDrawing);
+    _hadSelection = hasSelection;
+    _wasDrawing = drawing;
+    if (starts) {
+      setState(() {
+        _open = true;
+        _tab = _SheetTab.edit;
+      });
+    } else if (ends && _tab == _SheetTab.edit && _open) {
+      setState(() => _open = false);
+    }
+  }
+
+  void _select(_SheetTab tab) => setState(() {
+        if (_open && _tab == tab) {
+          _open = false;
+        } else {
+          _open = true;
+          _tab = tab;
+        }
+      });
 
   @override
   Widget build(BuildContext context) {
-    const gap = 10.0;
+    final parts = widget.parts;
     return ColoredBox(
       color: StoryEditorColors.background,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= wideBreakpoint;
+          final wide = constraints.maxWidth >= widget.wideBreakpoint;
           final canvas = ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: CustomPaint(
@@ -366,27 +450,29 @@ class StoryEditorDefaultLayout extends StatelessWidget {
               child: parts.canvas,
             ),
           );
+          final sheetHeight =
+              (constraints.maxHeight * 0.34).clamp(150.0, 280.0);
           return Padding(
-            padding: const EdgeInsets.all(gap),
+            padding: const EdgeInsets.all(_gap),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(child: parts.toolbar),
-                const SizedBox(height: gap),
+                const SizedBox(height: _gap),
                 Expanded(
                   child: wide
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(child: canvas),
-                            const SizedBox(width: gap),
+                            const SizedBox(width: _gap),
                             SizedBox(
-                              width: sidePanelWidth,
+                              width: widget.sidePanelWidth,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Expanded(flex: 2, child: parts.layers),
-                                  const SizedBox(height: gap),
+                                  const SizedBox(height: _gap),
                                   Expanded(flex: 3, child: parts.properties),
                                 ],
                               ),
@@ -397,24 +483,101 @@ class StoryEditorDefaultLayout extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(child: canvas),
-                            const SizedBox(height: gap),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 200),
-                              child: parts.properties,
+                            const SizedBox(height: _gap),
+                            _SheetTabs(
+                              tab: _tab,
+                              open: _open,
+                              onSelected: _select,
+                            ),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.topCenter,
+                              child: _open
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: SizedBox(
+                                        height: sheetHeight,
+                                        child: _tab == _SheetTab.edit
+                                            ? parts.properties
+                                            : parts.layers,
+                                      ),
+                                    )
+                                  : const SizedBox(width: double.infinity),
                             ),
                           ],
                         ),
                 ),
-                const SizedBox(height: gap),
-                SizedBox(
-                  height: wide ? timelineHeight : timelineHeight * 0.85,
-                  child: parts.timeline,
+                // On phones the open sheet takes the timeline's place, so the
+                // canvas keeps its room while an element is being edited.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: wide || !_open
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: _gap),
+                          child: SizedBox(
+                            height: wide
+                                ? widget.timelineHeight
+                                : widget.compactTimelineHeight,
+                            child: parts.timeline,
+                          ),
+                        )
+                      : const SizedBox(width: double.infinity),
                 ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+/// The Edit and Layers switches above the narrow layout's sheet. Tapping the
+/// open tab collapses the sheet.
+class _SheetTabs extends StatelessWidget {
+  const _SheetTabs({
+    required this.tab,
+    required this.open,
+    required this.onSelected,
+  });
+
+  final _SheetTab tab;
+  final bool open;
+  final ValueChanged<_SheetTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final editOpen = open && tab == _SheetTab.edit;
+    final layersOpen = open && tab == _SheetTab.layers;
+    return Row(
+      children: [
+        StoryEditorButtonGroup(children: [
+          StoryEditorButton(
+            label: editOpen ? 'Hide properties' : 'Show properties',
+            icon: StoryEditorIcons.sparkle,
+            glyph: 'Edit',
+            selected: editOpen,
+            onPressed: () => onSelected(_SheetTab.edit),
+          ),
+          StoryEditorButton(
+            label: layersOpen ? 'Hide layers' : 'Show layers',
+            icon: StoryEditorIcons.layers,
+            glyph: 'Layers',
+            selected: layersOpen,
+            onPressed: () => onSelected(_SheetTab.layers),
+          ),
+        ]),
+        const Spacer(),
+        StoryEditorButton(
+          label: open ? 'Collapse panel' : 'Expand panel',
+          icon:
+              open ? StoryEditorIcons.chevronDown : StoryEditorIcons.chevronUp,
+          onPressed: () => onSelected(tab),
+        ),
+      ],
     );
   }
 }

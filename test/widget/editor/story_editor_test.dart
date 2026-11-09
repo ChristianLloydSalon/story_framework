@@ -47,10 +47,46 @@ void main() {
     expect(find.text('“t1”'), findsOneWidget);
   });
 
-  testWidgets('narrow layouts drop the side panel', (tester) async {
-    await pumpEditor(tester, size: const Size(500, 900));
+  testWidgets('narrow layouts put properties and layers in a sheet',
+      (tester) async {
+    final controller = await pumpEditor(tester, size: const Size(400, 860));
+    // Nothing selected: the sheet is closed, so the canvas gets the room.
     expect(find.byType(StoryLayersPanel), findsNothing);
+    expect(find.byType(StoryPropertiesPanel), findsNothing);
+
+    // Selecting opens it on Edit.
+    controller.select(['t1']);
+    await tester.pumpAndSettle();
     expect(find.byType(StoryPropertiesPanel), findsOneWidget);
+
+    // Layers are reachable on phones too.
+    await tester.tap(find.bySemanticsLabel('Show layers'));
+    await tester.pumpAndSettle();
+    expect(find.byType(StoryLayersPanel), findsOneWidget);
+    expect(find.byType(StoryPropertiesPanel), findsNothing);
+
+    // Deselecting keeps a layers sheet open (the user chose it)...
+    controller.clearSelection();
+    await tester.pumpAndSettle();
+    expect(find.byType(StoryLayersPanel), findsOneWidget);
+
+    // ...but closes an Edit sheet.
+    await tester.tap(find.bySemanticsLabel('Show properties'));
+    await tester.pumpAndSettle();
+    controller.select(['t2']);
+    await tester.pumpAndSettle();
+    controller.clearSelection();
+    await tester.pumpAndSettle();
+    expect(find.byType(StoryPropertiesPanel), findsNothing);
+
+    // The collapse button toggles it by hand.
+    await tester.tap(find.bySemanticsLabel('Expand panel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(StoryPropertiesPanel), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Collapse panel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(StoryPropertiesPanel), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('layer rows select without gestures on the canvas',

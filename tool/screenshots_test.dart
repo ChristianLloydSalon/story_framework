@@ -259,4 +259,22 @@ void main() {
     await tester.pump();
     await _capture(tester, '../doc/screenshots/editor_mobile.png');
   });
+
+  testWidgets('editor on a phone, nothing selected', (tester) async {
+    debugDisableShadows = false;
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final editor = StoryEditorController(
+      document: showcase(),
+      idGenerator: SequentialStoryIdGenerator(),
+    );
+    addTearDown(editor.dispose);
+    await tester.pumpWidget(_Frame(
+      size: const Size(390, 844),
+      child: StoryEditor(controller: editor),
+    ));
+    await tester.pump();
+    await _capture(tester, '../doc/screenshots/editor_mobile_closed.png');
+  });
 }

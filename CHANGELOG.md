@@ -1,3 +1,12 @@
+## Unreleased
+
+- Phone-friendly default editor layout: on narrow screens, properties and
+  layers live in a collapsible sheet with Edit and Layers tabs. It opens
+  when something is selected (or the draw tool is picked), closes when the
+  selection is cleared, and takes the timeline's place while open, so the
+  canvas keeps most of the screen. Layers are now reachable on phones.
+  `StoryEditorDefaultLayout` gains `compactTimelineHeight`.
+
 ## 0.1.0
 
 - Export (`package:story_framework/export.dart`):
