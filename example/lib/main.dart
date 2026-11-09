@@ -27,7 +27,20 @@ class StoryTrayPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final document = sampleDocument();
     return Scaffold(
-      appBar: AppBar(title: const Text('Stories')),
+      appBar: AppBar(
+        title: const Text('Stories'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => StoryEditorPage(initial: document),
+              ),
+            ),
+            icon: const Icon(Icons.edit),
+            label: const Text('Create'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -185,6 +198,51 @@ class PausedBadge extends StatelessWidget {
       child: const Padding(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Text('Paused', style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+}
+
+/// The story editor, with a preview button that plays the current draft.
+class StoryEditorPage extends StatefulWidget {
+  const StoryEditorPage({required this.initial, super.key});
+
+  final StoryDocument initial;
+
+  @override
+  State<StoryEditorPage> createState() => _StoryEditorPageState();
+}
+
+class _StoryEditorPageState extends State<StoryEditorPage> {
+  StoryDocument? _draft;
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = _draft ?? widget.initial;
+    return Scaffold(
+      backgroundColor: StoryEditorColors.background,
+      appBar: AppBar(
+        title: const Text('Editor'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                fullscreenDialog: true,
+                builder: (context) =>
+                    StoryViewerPage(document: draft, groupIndex: 0),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Preview'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: StoryEditor(
+          document: widget.initial,
+          // A real app would save the draft here.
+          onChanged: (document) => setState(() => _draft = document),
+        ),
       ),
     );
   }

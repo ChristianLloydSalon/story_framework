@@ -7,8 +7,8 @@ state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
 > serialization, validation, the headless playback engine, rendering, a
-> customizable story viewer, and interactive stickers are implemented. Media
-> integrations, the editor, and the export pipeline are planned; see
+> customizable story viewer, interactive stickers, and the story editor are
+> implemented. Media integrations and the export pipeline are planned; see
 > [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
@@ -38,6 +38,10 @@ state-management library.
   links, and product tags that never interfere with navigation, report
   every interaction to your app, and are screen-reader and keyboard
   accessible.
+- **Story editor**: command-based undo/redo with transactions and history
+  limits; selection and multi-selection; transform handles, snapping, and
+  alignment; layer management; extensible tools; a timeline; keyboard
+  shortcuts; and accessible panels for every canvas gesture.
 - **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
   using a pluggable renderer registry. Built-in renderers cover images, text,
   stickers, shapes, and drawings, with app-defined widget and custom elements.
@@ -67,6 +71,23 @@ dismiss. Gestures, transitions, and overlays are all pluggable. Keyboard
 shortcuts and screen-reader buttons are included. The header, footer,
 progress bar, loading and error overlays, or the whole layout can be replaced.
 See the [example app](example/lib/main.dart).
+
+## Edit stories
+
+```dart
+import 'package:story_framework/editor.dart';
+
+StoryEditor(
+  document: draft,
+  onChanged: (document) => saveDraft(document),
+)
+```
+
+The editor provides a canvas with selection, move, scale, rotate, snapping,
+and alignment guides; text, sticker, shape, drawing, and eraser tools (plus
+image and video tools with your own pickers); layers; a timeline for story
+order, durations, and transitions; and undo/redo. Use the whole UI, or just
+`StoryEditorController` and `StoryEditorCanvas` in your own.
 
 ## Build documents
 
@@ -151,8 +172,9 @@ StoryItemView(
 | `package:story_framework/rendering.dart` | Renderers, registry, and item views |
 | `package:story_framework/viewer.dart` | The story viewer, gestures, and overlays |
 | `package:story_framework/animations.dart` | Story transitions |
+| `package:story_framework/editor.dart` | The story editor |
 
-Editor and export entry points will be added with their modules.
+The export entry point will be added with its module.
 
 ## Roadmap
 
@@ -166,7 +188,7 @@ Editor and export entry points will be added with their modules.
 | 5 | Advanced viewer customization (gesture and transition registries, overlays) | ✅ |
 | 6 | Media integrations and caching | Planned (deferred) |
 | 7 | Interactive content | ✅ |
-| 8–10 | Story editor, tools, timeline, undo/redo | Planned |
+| 8–10 | Story editor, tools, timeline, undo/redo | ✅ |
 | 11 | Export pipeline | Planned |
 | 12 | Production readiness | Planned |
 
@@ -182,5 +204,6 @@ Editor and export entry points will be added with their modules.
 - [Transition system](doc/TRANSITION_SYSTEM.md)
 - [Overlay system](doc/OVERLAY_SYSTEM.md)
 - [Interactive content](doc/INTERACTIVE_CONTENT.md)
+- [Editor system](doc/EDITOR_SYSTEM.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

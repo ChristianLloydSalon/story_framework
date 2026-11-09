@@ -1,5 +1,25 @@
 ## Unreleased
 
+- Story editor (`package:story_framework/editor.dart`):
+  - `StoryEditorController`: current item, selection and multi-selection,
+    element, layer, alignment, distribution, flip, rename, lock, and
+    visibility operations; inline text editing; story items, groups,
+    durations, transitions, backgrounds, and media trims.
+  - Command-based history: `StoryEditCommand`, labeled undo/redo,
+    transactions (nested, cancellable), history limits, selection restore,
+    and validation policies (`none`, `report`, `reject`).
+  - `StoryDocumentEditing` and `StoryItemEditing` extensions for immutable
+    document edits with structural sharing.
+  - `StoryEditorCanvas`: viewport zoom and pan (pinch, wheel), hit testing
+    of rotated and scaled elements, scale/resize/rotate handles (with group
+    transforms), snapping with alignment guides, drag selection, and inline
+    text editing.
+  - Tools: select, text, image, video, sticker, shape, draw, eraser;
+    `StoryEditorTool` and `StoryEditorToolRegistry` for custom tools.
+  - Default UI: `StoryEditor` with toolbar, layers, properties, and timeline
+    panels, a responsive layout, keyboard shortcuts, and replaceable parts.
+- `StoryRect.overlaps`, `union`, and `fromPoints`.
+- Example: editor page with a live preview in the viewer.
 - Interactive content: `InteractiveElement` with `StoryPoll`, `StoryQuiz`,
   `StoryQuestion`, `StorySlider`, `StoryCountdown`, `StoryLink`,
   `StoryProductTag`, and `StoryCustomInteraction`, with serialization and

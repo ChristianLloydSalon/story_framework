@@ -131,6 +131,29 @@ final class StoryRect {
       point.y >= top &&
       point.y <= bottom;
 
+  /// Whether this rectangle and [other] share any area or edge.
+  bool overlaps(StoryRect other) =>
+      left <= other.right &&
+      other.left <= right &&
+      top <= other.bottom &&
+      other.top <= bottom;
+
+  /// The smallest rectangle containing this one and [other].
+  StoryRect union(StoryRect other) {
+    final l = left < other.left ? left : other.left;
+    final t = top < other.top ? top : other.top;
+    final r = right > other.right ? right : other.right;
+    final b = bottom > other.bottom ? bottom : other.bottom;
+    return StoryRect.fromLTWH(l, t, r - l, b - t);
+  }
+
+  /// The rectangle spanning two corner points, in any order.
+  static StoryRect fromPoints(StoryPoint a, StoryPoint b) {
+    final l = a.x < b.x ? a.x : b.x;
+    final t = a.y < b.y ? a.y : b.y;
+    return StoryRect.fromLTWH(l, t, (a.x - b.x).abs(), (a.y - b.y).abs());
+  }
+
   @override
   bool operator ==(Object other) =>
       other is StoryRect &&
