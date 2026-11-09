@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.1
 
 - Phone-friendly default editor layout: on narrow screens, properties and
   layers live in a collapsible sheet with Edit and Layers tabs. It opens

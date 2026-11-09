@@ -1,8 +1,8 @@
 name: story_framework
 description: >-
   Instagram-style stories for Flutter: a customizable viewer, a full editor,
-  interactive stickers, video and audio, and export, with no dependencies.
-version: 0.1.0
+  interactive stickers, video and audio, and export.
+version: 0.1.1
 repository: https://github.com/ChristianLloydSalon/story_framework
 issue_tracker: https://github.com/ChristianLloydSalon/story_framework/issues
 topics:

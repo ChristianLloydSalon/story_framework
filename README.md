@@ -457,8 +457,7 @@ Notes:
 - PNG and video export capture one frame, so an animated GIF exports as a
   still image.
 - Giphy and Tenor require their own API and attribution ("Powered by
-  GIPHY"). That integration belongs in your app; the package has no
-  dependency on either.
+  GIPHY"). That integration belongs in your app.
 
 ## Entry points
 
