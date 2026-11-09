@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../composition/document/story_background.dart';
 import '../../composition/document/story_document.dart';
+import '../../composition/elements/story_element.dart';
 import '../../composition/items/story_item.dart';
 import '../../core/enums/story_enums.dart';
 import '../../core/errors/story_exceptions.dart';
@@ -10,6 +11,9 @@ import '../contracts/story_element_renderer.dart';
 import '../conversions.dart';
 import '../options/story_render_options.dart';
 import '../registry/story_renderer_registry.dart';
+
+/// Decides whether an element is drawn by a [StoryItemView].
+typedef StoryElementFilter = bool Function(StoryElement element);
 
 /// Renders one [StoryItem] on its document's canvas, scaled to fit.
 ///
@@ -29,6 +33,8 @@ class StoryItemView extends StatefulWidget {
     this.registry,
     this.options = const StoryRenderOptions(),
     this.mode = StoryRenderMode.viewer,
+    this.elementFilter,
+    this.paintBackground = true,
     super.key,
   });
 
@@ -46,6 +52,16 @@ class StoryItemView extends StatefulWidget {
 
   /// Where the item is being rendered.
   final StoryRenderMode mode;
+
+  /// Draws only elements that pass, or every visible element when `null`.
+  ///
+  /// The viewer uses two aligned views: static content below the gesture
+  /// layer and interactive elements above it.
+  final StoryElementFilter? elementFilter;
+
+  /// Whether the item or canvas background is painted. Turn off for layers
+  /// stacked above another view.
+  final bool paintBackground;
 
   @override
   State<StoryItemView> createState() => _StoryItemViewState();
@@ -85,15 +101,17 @@ class _StoryItemViewState extends State<StoryItemView> {
         listenable: registry,
         builder: (context, _) => Stack(
           children: [
-            Positioned.fill(
-              child: StoryBackgroundView(
-                background: widget.item.background ?? canvas.background,
-                document: widget.document,
-                options: widget.options,
+            if (widget.paintBackground)
+              Positioned.fill(
+                child: StoryBackgroundView(
+                  background: widget.item.background ?? canvas.background,
+                  document: widget.document,
+                  options: widget.options,
+                ),
               ),
-            ),
             for (final element in widget.item.elementsInPaintOrder)
-              if (element.visible)
+              if (element.visible &&
+                  (widget.elementFilter?.call(element) ?? true))
                 StoryElementView(
                   key: ValueKey(element.id),
                   registry: registry,

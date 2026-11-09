@@ -77,6 +77,34 @@ StoryDocument sampleDocument() {
             headline: 'Hold to pause',
             caption: 'Playback resumes when you let go.',
           ),
+          StoryItem(
+            id: 'grace-poll',
+            duration: const FixedItemDuration(Duration(seconds: 10)),
+            background: StoryGradientBackground(
+              colors: const [StoryColor(0xFF8E2DE2), StoryColor(0xFF4A00E0)],
+            ),
+            elements: [
+              InteractiveElement(
+                id: 'grace-poll-sticker',
+                transform: _box(540, 860, 860, 560),
+                interaction: StoryPoll(
+                  question: 'Tabs or spaces?',
+                  choices: const [
+                    StoryChoice(id: 'tabs', label: 'Tabs'),
+                    StoryChoice(id: 'spaces', label: 'Spaces'),
+                  ],
+                ),
+              ),
+              InteractiveElement(
+                id: 'grace-link',
+                transform: _box(540, 1350, 700, 160),
+                interaction: StoryLink(
+                  url: Uri.parse('https://pub.dev/packages/story_framework'),
+                  label: 'View the package',
+                ),
+              ),
+            ],
+          ),
           _titleCard(
             id: 'grace-3',
             colors: const [StoryColor(0xFFF7971E), StoryColor(0xFFFFD200)],

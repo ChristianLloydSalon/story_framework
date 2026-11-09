@@ -18,6 +18,7 @@ a small number of public entry points.
 | Gestures | `lib/src/gestures/` | ✅ | Gesture events, handler contract, registry, default handlers |
 | Animations | `lib/src/animations/` | ✅ | Transition contract, registry, presets, switcher |
 | Overlays | `lib/src/overlays/` | ✅ | Overlay descriptors and overlay layer |
+| Interactions | `lib/src/interactions/` | ✅ | Interaction state, events, controller, scope |
 | Editor | `lib/src/editor/` | Planned (Phase 8–10) | Editor controller, canvas, tools, history |
 | Export | `lib/src/export/` | Planned (Phase 11) | Exporter registry and pipeline |
 
@@ -49,9 +50,10 @@ exist):
 4. `editor` must not import `viewer` or `engine`.
 5. `viewer` and `editor` share the composition model and rendering contracts.
 6. `export` must not import `viewer`.
-7. `rendering` imports `core`, `composition`, and Flutter widgets. It must not
-   import `engine`, `viewer`, or `editor`, so the editor and exporter can use it
-   without playback.
+7. `rendering` imports `core`, `composition`, `interactions`, and Flutter
+   widgets. It must not import `engine`, `viewer`, or `editor`, so the editor
+   and exporter can use it without playback. Interaction widgets hold playback
+   through the `StoryPlaybackHold` contract in `core`, not the engine.
 8. Media integrations implement `media` contracts; the engine never imports a
    concrete media package.
 9. No circular imports between modules.

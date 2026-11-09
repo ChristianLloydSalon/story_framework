@@ -32,6 +32,7 @@ own, or the viewer creates the built-in one and disposes it.
 | Part | Default | Replace with |
 |---|---|---|
 | Content | `StoryItemView` of the current item | `registry`, `renderOptions` |
+| Interactive content | Interactive elements, above the gesture layer | `interactionController`, `onInteraction` |
 | Progress | `StoryProgressBar` | `progressBuilder` |
 | Header | `StoryViewerHeader` (group title, close button when `onDismiss` is set) | `headerBuilder` |
 | Footer | none | `footerBuilder` |

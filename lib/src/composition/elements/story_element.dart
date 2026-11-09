@@ -6,6 +6,7 @@ import '../../core/models/story_color.dart';
 import '../../core/models/story_source.dart';
 import '../../core/utilities/json.dart';
 import 'element_styles.dart';
+import 'interactions.dart';
 import 'story_transform.dart';
 
 /// Transform used by elements without a visual box, such as audio.
@@ -67,6 +68,10 @@ sealed class StoryElement {
 
   /// Whether the element has its own timeline (video, audio).
   bool get isTimeBased => false;
+
+  /// Whether viewers interact with the element directly (polls, quizzes,
+  /// links). Interactive elements receive touches instead of navigation.
+  bool get isInteractive => false;
 
   /// Returns a copy with the common fields replaced.
   ///
@@ -931,6 +936,97 @@ final class CustomElement extends StoryElement {
 
   @override
   CustomElement copyWithCommon({
+    StoryTransform? transform,
+    double? opacity,
+    int? zIndex,
+    bool? visible,
+    bool? locked,
+    String? semanticLabel,
+    JsonMap? metadata,
+    JsonMap? customData,
+  }) =>
+      copyWith(
+        transform: transform,
+        opacity: opacity,
+        zIndex: zIndex,
+        visible: visible,
+        locked: locked,
+        semanticLabel: semanticLabel,
+        metadata: metadata,
+        customData: customData,
+      );
+}
+
+/// An element viewers interact with: a poll, quiz, question, slider,
+/// countdown, link, product tag, or custom interaction.
+///
+/// In the viewer, interactive elements are drawn above the gesture layer, so
+/// touching them never navigates.
+final class InteractiveElement extends StoryElement {
+  /// Creates an interactive element.
+  InteractiveElement({
+    required super.id,
+    required super.transform,
+    required this.interaction,
+    this.accentColor,
+    super.opacity,
+    super.zIndex,
+    super.visible,
+    super.locked,
+    super.semanticLabel,
+    super.metadata,
+    super.customData,
+  });
+
+  /// Serialization identifier.
+  static const String typeId = 'interactive';
+
+  /// What the element asks of the viewer.
+  final StoryInteraction interaction;
+
+  /// Highlight color for the element, or `null` for the default.
+  final StoryColor? accentColor;
+
+  @override
+  String get type => typeId;
+
+  @override
+  bool get isInteractive => true;
+
+  @override
+  List<Object?> get _props => [interaction, accentColor];
+
+  /// Returns a copy with the given fields replaced.
+  InteractiveElement copyWith({
+    String? id,
+    StoryTransform? transform,
+    StoryInteraction? interaction,
+    StoryColor? accentColor,
+    double? opacity,
+    int? zIndex,
+    bool? visible,
+    bool? locked,
+    String? semanticLabel,
+    JsonMap? metadata,
+    JsonMap? customData,
+  }) {
+    return InteractiveElement(
+      id: id ?? this.id,
+      transform: transform ?? this.transform,
+      interaction: interaction ?? this.interaction,
+      accentColor: accentColor ?? this.accentColor,
+      opacity: opacity ?? this.opacity,
+      zIndex: zIndex ?? this.zIndex,
+      visible: visible ?? this.visible,
+      locked: locked ?? this.locked,
+      semanticLabel: semanticLabel ?? this.semanticLabel,
+      metadata: metadata ?? this.metadata,
+      customData: customData ?? this.customData,
+    );
+  }
+
+  @override
+  InteractiveElement copyWithCommon({
     StoryTransform? transform,
     double? opacity,
     int? zIndex,

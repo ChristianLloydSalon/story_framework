@@ -8,6 +8,7 @@ import '../../composition/elements/story_element.dart';
 import '../../composition/items/item_timing.dart';
 import '../../composition/items/story_item.dart';
 import '../../configuration/playback/story_playback_config.dart';
+import '../../core/contracts/story_playback_hold.dart';
 import '../../core/enums/story_enums.dart';
 import '../../core/errors/story_exceptions.dart';
 import '../../core/models/playback_state.dart';
@@ -104,6 +105,11 @@ class StoryController {
   Duration? _duration;
   double _speed;
   final Set<StoryPauseReason> _reasons = {};
+  final Map<StoryPauseReason, int> _holds = {};
+
+  /// Explicit reasons plus reasons with at least one active hold.
+  Set<StoryPauseReason> get _activeReasons =>
+      _holds.isEmpty ? _reasons : {..._reasons, ..._holds.keys};
   StoryBufferingStatus _buffering = StoryBufferingStatus.ready;
   StoryMediaStatus? _mediaStatus;
   StoryException? _error;
@@ -212,6 +218,30 @@ class StoryController {
   void addPauseReason(StoryPauseReason reason) {
     _checkNotDisposed();
     if (_reasons.add(reason)) _sync();
+  }
+
+  /// Holds playback for [reason] until the returned hold is released.
+  ///
+  /// Unlike [addPauseReason], holds are counted: the reason stays active while
+  /// any hold for it is unreleased, and [removePauseReason] does not clear
+  /// held reasons. Holds end automatically when the controller is disposed.
+  StoryPlaybackHold acquirePause(StoryPauseReason reason) {
+    _checkNotDisposed();
+    final hold = _ControllerHold(this, reason);
+    _holds[reason] = (_holds[reason] ?? 0) + 1;
+    if (_holds[reason] == 1) _sync();
+    return hold;
+  }
+
+  void _releaseHold(StoryPauseReason reason) {
+    if (_disposed) return;
+    final count = (_holds[reason] ?? 0) - 1;
+    if (count > 0) {
+      _holds[reason] = count;
+      return;
+    }
+    _holds.remove(reason);
+    _sync();
   }
 
   /// Clears [reason]. Playback resumes if no other reason remains.
@@ -584,11 +614,12 @@ class StoryController {
   void _sync() {
     if (_disposed) return;
     final ready = _phase == _Phase.ready && !_heldAtEnd;
-    final blocked = _reasons.any((r) => r != StoryPauseReason.buffering);
+    final active = _activeReasons;
+    final blocked = active.any((r) => r != StoryPauseReason.buffering);
     // Buffering holds the timeline but not the media, which must keep loading.
     final mediaShouldPlay = ready && !blocked;
     final timelineShouldRun =
-        mediaShouldPlay && !_reasons.contains(StoryPauseReason.buffering);
+        mediaShouldPlay && !active.contains(StoryPauseReason.buffering);
 
     _setTimelineRunning(timelineShouldRun);
     final media = _media;
@@ -764,7 +795,7 @@ class StoryController {
       status: status,
       bufferingStatus: _buffering,
       mediaStatus: _mediaStatus,
-      pauseReasons: _reasons,
+      pauseReasons: _activeReasons,
       playbackSpeed: _speed,
       error: _error,
     );
@@ -781,5 +812,23 @@ class StoryController {
 
   void _checkNotDisposed() {
     if (_disposed) throw const ControllerDisposedException('StoryController');
+  }
+}
+
+final class _ControllerHold implements StoryPlaybackHold {
+  _ControllerHold(this._controller, this._reason);
+
+  final StoryController _controller;
+  final StoryPauseReason _reason;
+  bool _active = true;
+
+  @override
+  bool get isActive => _active && !_controller.isDisposed;
+
+  @override
+  void release() {
+    if (!_active) return;
+    _active = false;
+    _controller._releaseHold(_reason);
   }
 }

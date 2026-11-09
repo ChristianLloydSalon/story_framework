@@ -47,6 +47,7 @@ generated implicitly, so documents are deterministic and diffable.
 | `drawing` | `DrawingElement` | Editable vector strokes |
 | `widget` | `WidgetElement` | App widget identified by `widgetType` + JSON `data` |
 | `custom` | `CustomElement` | App element type with its own renderer/editor |
+| `interactive` | `InteractiveElement` | Poll, quiz, question, slider, countdown, link, product tag, or custom interaction (see [INTERACTIVE_CONTENT.md](INTERACTIVE_CONTENT.md)) |
 | *(other)* | `UnknownElement` | Type not known to this version; preserved verbatim |
 
 Common fields: `id`, `transform`, `opacity`, `zIndex`, `visible`, `locked`,

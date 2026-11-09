@@ -36,8 +36,15 @@ void main() {
   group('StoryRendererRegistry', () {
     test('defaults cover the built-in visual element types', () {
       final registry = StoryRendererRegistry.withDefaults();
-      expect(registry.ids,
-          ['image', 'text', 'sticker', 'shape', 'drawing', 'audio']);
+      expect(registry.ids, [
+        'image',
+        'text',
+        'sticker',
+        'shape',
+        'drawing',
+        'audio',
+        'interactive',
+      ]);
       expect(registry.rendererFor(image), isA<StoryImageRenderer>());
       expect(registry.rendererFor(text), isA<StoryTextRenderer>());
       expect(

@@ -208,9 +208,72 @@ StoryDocument sampleDocument() {
           StoryItem(
             id: 'i4',
             duration: CustomItemDuration('quiz', data: const {'max': 3}),
+            elements: sampleInteractiveElements(),
           ),
         ],
       ),
     ],
   );
 }
+
+/// One interactive element of every kind.
+List<InteractiveElement> sampleInteractiveElements() => [
+      InteractiveElement(
+        id: 'poll',
+        transform: box(540, 400, 800, 400),
+        accentColor: const StoryColor(0xFFFF5722),
+        interaction: StoryPoll(question: 'Tea or coffee?', choices: const [
+          StoryChoice(id: 'tea', label: 'Tea'),
+          StoryChoice(id: 'coffee', label: 'Coffee'),
+        ]),
+      ),
+      InteractiveElement(
+        id: 'quiz',
+        transform: box(540, 900, 800, 500),
+        interaction: StoryQuiz(
+          question: 'Capital of France?',
+          choices: const [
+            StoryChoice(id: 'paris', label: 'Paris'),
+            StoryChoice(id: 'rome', label: 'Rome'),
+          ],
+          correctChoiceId: 'paris',
+        ),
+      ),
+      InteractiveElement(
+        id: 'question',
+        transform: box(540, 1300, 800, 300),
+        interaction: const StoryQuestion(
+            prompt: 'Ask me anything', placeholder: 'Your question'),
+      ),
+      InteractiveElement(
+        id: 'slider',
+        transform: box(540, 1600, 800, 300),
+        interaction:
+            const StorySlider(question: 'How hyped are you?', emoji: '🔥'),
+      ),
+      InteractiveElement(
+        id: 'countdown',
+        transform: box(540, 200, 800, 300),
+        interaction: StoryCountdown(
+            title: 'Launch', endsAt: DateTime.utc(2026, 12, 1, 9)),
+      ),
+      InteractiveElement(
+        id: 'link',
+        transform: box(540, 1800, 600, 120),
+        interaction: StoryLink(
+            url: Uri.parse('https://example.com/shop'), label: 'Shop now'),
+      ),
+      InteractiveElement(
+        id: 'product',
+        transform: box(300, 1700, 500, 120),
+        interaction: const StoryProductTag(
+            productId: 'sku-1', name: 'Mug', priceLabel: r'$12'),
+      ),
+      InteractiveElement(
+        id: 'custom-interaction',
+        transform: box(800, 1700, 300, 120),
+        interaction: StoryCustomInteraction('emoji-rain', data: const {
+          'emoji': '🎈',
+        }),
+      ),
+    ];

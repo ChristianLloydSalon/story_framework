@@ -6,6 +6,7 @@ import '../../core/models/story_source.dart';
 import '../document/story_background.dart';
 import '../document/story_document.dart';
 import '../elements/element_styles.dart';
+import '../elements/interactions.dart';
 import '../elements/story_element.dart';
 import '../items/item_timing.dart';
 import '../items/story_item.dart';
@@ -302,8 +303,73 @@ final class _Context {
           error(StoryValidationCodes.outOfRange,
               'Corner radius must be non-negative', '$path.cornerRadius');
         }
+      case InteractiveElement(:final interaction):
+        _interaction(interaction, '$path.interaction');
       case WidgetElement() || CustomElement() || UnknownElement():
         break;
+    }
+  }
+
+  void _interaction(StoryInteraction interaction, String path) {
+    void choices(List<StoryChoice> list) {
+      if (list.length < 2) {
+        error(StoryValidationCodes.outOfRange, 'At least two choices needed',
+            '$path.choices');
+      }
+      final ids = <String>{};
+      for (final (i, choice) in list.indexed) {
+        _id(choice.id, '$path.choices[$i].id');
+        if (!ids.add(choice.id)) {
+          error(StoryValidationCodes.duplicateId,
+              'Duplicate choice id "${choice.id}"', '$path.choices[$i].id');
+        }
+        if (choice.label.trim().isEmpty) {
+          warning(StoryValidationCodes.empty, 'Choice label is empty',
+              '$path.choices[$i].label');
+        }
+      }
+    }
+
+    void text(String value, String field) {
+      if (value.trim().isEmpty) {
+        warning(StoryValidationCodes.empty, 'Text is empty', '$path.$field');
+      }
+    }
+
+    switch (interaction) {
+      case StoryPoll(:final question, choices: final options):
+        text(question, 'question');
+        choices(options);
+      case StoryQuiz(
+          :final question,
+          choices: final options,
+          :final correctChoiceId,
+        ):
+        text(question, 'question');
+        choices(options);
+        if (!options.any((choice) => choice.id == correctChoiceId)) {
+          error(
+              StoryValidationCodes.missingReference,
+              'Correct choice "$correctChoiceId" is not one of the choices',
+              '$path.correctChoiceId');
+        }
+      case StoryQuestion(:final prompt):
+        text(prompt, 'prompt');
+      case StorySlider(:final question):
+        text(question, 'question');
+      case StoryCountdown(:final title):
+        text(title, 'title');
+      case StoryLink(:final url, :final label):
+        text(label, 'label');
+        if (!(url.isScheme('http') || url.isScheme('https'))) {
+          error(StoryValidationCodes.outOfRange, 'Links must use http or https',
+              '$path.url');
+        }
+      case StoryProductTag(:final productId, :final name):
+        _id(productId, '$path.productId');
+        text(name, 'name');
+      case StoryCustomInteraction(:final type):
+        _id(type, '$path.type');
     }
   }
 

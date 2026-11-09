@@ -6,9 +6,9 @@ Snapchat, or WhatsApp Status — with no forced UI, backend, media provider, or
 state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
-> serialization, validation, the headless playback engine, rendering, and a
-> customizable story viewer are implemented. The editor and export pipeline
-> are planned; see
+> serialization, validation, the headless playback engine, rendering, a
+> customizable story viewer, and interactive stickers are implemented. Media
+> integrations, the editor, and the export pipeline are planned; see
 > [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
@@ -34,6 +34,10 @@ state-management library.
   ownership, and cancellation; eight transition presets plus custom
   transitions, with reduced-motion support; and independently composed
   overlays with z-order, visibility rules, and touch handling.
+- **Interactive content**: polls, quizzes, questions, sliders, countdowns,
+  links, and product tags that never interfere with navigation, report
+  every interaction to your app, and are screen-reader and keyboard
+  accessible.
 - **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
   using a pluggable renderer registry. Built-in renderers cover images, text,
   stickers, shapes, and drawings, with app-defined widget and custom elements.
@@ -160,8 +164,8 @@ Editor and export entry points will be added with their modules.
 | 3 | Rendering foundation | ✅ |
 | 4 | Story viewer | ✅ |
 | 5 | Advanced viewer customization (gesture and transition registries, overlays) | ✅ |
-| 6 | Media integrations and caching | Planned |
-| 7 | Interactive content | Planned |
+| 6 | Media integrations and caching | Planned (deferred) |
+| 7 | Interactive content | ✅ |
 | 8–10 | Story editor, tools, timeline, undo/redo | Planned |
 | 11 | Export pipeline | Planned |
 | 12 | Production readiness | Planned |
@@ -177,5 +181,6 @@ Editor and export entry points will be added with their modules.
 - [Gesture system](doc/GESTURE_SYSTEM.md)
 - [Transition system](doc/TRANSITION_SYSTEM.md)
 - [Overlay system](doc/OVERLAY_SYSTEM.md)
+- [Interactive content](doc/INTERACTIVE_CONTENT.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

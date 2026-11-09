@@ -60,8 +60,10 @@ Decoding failures throw `SerializationException` with a `path` such as
 - Documents with an **older** version are upgraded by the
   `StoryDocumentMigration`s passed to the codec, one version at a time, on raw
   JSON. A missing step is an error.
-- Any change to the serialized shape bumps the schema version and ships a
-  migration.
+- Any breaking change to the serialized shape bumps the schema version and
+  ships a migration. Adding a new element type or interaction kind is
+  additive and keeps the version: older readers preserve it as an
+  `UnknownElement`.
 
 ## Unknown elements
 

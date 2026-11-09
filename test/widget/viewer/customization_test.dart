@@ -458,7 +458,8 @@ void main() {
       final gesture =
           await tester.startGesture(tester.getCenter(find.text('Reply')));
       await tester.pump();
-      expect(controller.state.value.pauseReasons, {StoryPauseReason.external});
+      expect(
+          controller.state.value.pauseReasons, {StoryPauseReason.interaction});
       await gesture.up();
       await tester.pump();
       expect(controller.state.value.pauseReasons, isEmpty);

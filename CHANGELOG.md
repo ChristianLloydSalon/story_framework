@@ -1,5 +1,24 @@
 ## Unreleased
 
+- Interactive content: `InteractiveElement` with `StoryPoll`, `StoryQuiz`,
+  `StoryQuestion`, `StorySlider`, `StoryCountdown`, `StoryLink`,
+  `StoryProductTag`, and `StoryCustomInteraction`, with serialization and
+  validation. Unknown interaction kinds are preserved like unknown elements.
+- `StoryInteractionController` holds runtime state (votes, results, ratings,
+  replies, reminders) and reports `StoryInteractionEvent`s;
+  `StoryInteractionScope` provides it to widgets.
+- `StoryInteractiveRenderer` (registered by default) with accessible,
+  keyboard-operable views, inert previews without a scope, and builders for
+  custom interactions.
+- The viewer draws interactive elements above the gesture layer so they
+  never trigger navigation, and accepts `interactionController` and
+  `onInteraction`.
+- Counted playback holds: `StoryController.acquirePause` and
+  `StoryPlaybackHold`; new `StoryPauseReason.interaction`. Overlay
+  `pauseWhileTouched` now uses counted holds.
+- `StoryItemView.elementFilter` and `paintBackground`;
+  `StoryElement.isInteractive`.
+- Example: poll and link stickers.
 - Gesture system: `StoryGestureHandler` contract, `StoryGestureRegistry`
   with priorities, newest-first tie breaking, enable/disable, drag and
   long-press ownership, and cancellation; default tap, hold, swipe-groups,

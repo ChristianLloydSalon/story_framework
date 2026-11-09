@@ -137,6 +137,8 @@ class StoryViewerPage extends StatelessWidget {
             builder: (context, controller) => const PausedBadge(),
           ),
         ],
+        // A real app would send votes to its backend and open links here.
+        onInteraction: (event) => debugPrint('Interaction: $event'),
         onDismiss: navigator.pop,
         onComplete: navigator.pop,
       ),

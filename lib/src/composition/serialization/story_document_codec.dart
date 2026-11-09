@@ -14,6 +14,7 @@ import '../document/story_background.dart';
 import '../document/story_canvas_configuration.dart';
 import '../document/story_document.dart';
 import '../elements/element_styles.dart';
+import '../elements/interactions.dart';
 import '../elements/story_element.dart';
 import '../elements/story_transform.dart';
 import '../groups/story_group.dart';
@@ -308,6 +309,10 @@ final class _Encoder {
           'customType': element.customType,
           if (element.data.isNotEmpty) 'data': element.data,
         },
+      InteractiveElement(:final interaction, :final accentColor) => {
+          'interaction': _interaction(interaction),
+          if (accentColor != null) 'accentColor': accentColor.toHex(),
+        },
       // Preserve everything we did not understand, overlaid with the common
       // fields so edits like moving or hiding are kept.
       UnknownElement() => element.rawJson,
@@ -376,6 +381,56 @@ final class _Encoder {
             'assetId': assetId,
           },
       };
+
+  JsonMap _interaction(StoryInteraction interaction) {
+    List<JsonMap> choices(List<StoryChoice> list) => [
+          for (final choice in list) {'id': choice.id, 'label': choice.label},
+        ];
+    return {
+      'kind': interaction.kind,
+      ...switch (interaction) {
+        StoryPoll(:final question, choices: final options) => {
+            'question': question,
+            'choices': choices(options),
+          },
+        StoryQuiz(
+          :final question,
+          choices: final options,
+          :final correctChoiceId,
+        ) =>
+          {
+            'question': question,
+            'choices': choices(options),
+            'correctChoiceId': correctChoiceId,
+          },
+        StoryQuestion(:final prompt, :final placeholder) => {
+            'prompt': prompt,
+            'placeholder': placeholder,
+          },
+        StorySlider(:final question, :final emoji) => {
+            'question': question,
+            'emoji': emoji,
+          },
+        StoryCountdown(:final title, :final endsAt) => {
+            'title': title,
+            'endsAt': _date(endsAt),
+          },
+        StoryLink(:final url, :final label) => {
+            'url': url.toString(),
+            'label': label,
+          },
+        StoryProductTag(:final productId, :final name, :final priceLabel) => {
+            'productId': productId,
+            'name': name,
+            if (priceLabel != null) 'priceLabel': priceLabel,
+          },
+        StoryCustomInteraction(:final type, :final data) => {
+            'type': type,
+            if (data.isNotEmpty) 'data': data,
+          },
+      },
+    };
+  }
 
   JsonMap _sticker(StickerContent sticker, String path) => switch (sticker) {
         EmojiSticker(:final emoji) => {'kind': 'emoji', 'emoji': emoji},
@@ -727,6 +782,22 @@ final class _Decoder {
           metadata: metadata,
           customData: customData,
         );
+      case InteractiveElement.typeId
+          when _interactionKinds.contains(
+              json.optionalChild('interaction')?.optionalString('kind')):
+        return InteractiveElement(
+          id: id,
+          transform: transform,
+          interaction: _interaction(json.child('interaction')),
+          accentColor: _optionalColor(json, 'accentColor'),
+          opacity: opacity,
+          zIndex: zIndex,
+          visible: visible,
+          locked: locked,
+          semanticLabel: semanticLabel,
+          metadata: metadata,
+          customData: customData,
+        );
       case CustomElement.typeId:
         return CustomElement(
           id: id,
@@ -811,6 +882,61 @@ final class _Decoder {
         ),
       'reference' => ReferenceStorySource(json.string('assetId')),
       final kind => json.fail('kind', 'Unknown source kind "$kind"'),
+    };
+  }
+
+  /// Interaction kinds this version understands. An interactive element with
+  /// any other kind is handled like an unknown element type, so documents
+  /// from newer versions keep it intact.
+  static const Set<String> _interactionKinds = {
+    StoryPoll.kindId,
+    StoryQuiz.kindId,
+    StoryQuestion.kindId,
+    StorySlider.kindId,
+    StoryCountdown.kindId,
+    StoryLink.kindId,
+    StoryProductTag.kindId,
+    StoryCustomInteraction.kindId,
+  };
+
+  StoryInteraction _interaction(JsonReader json) {
+    List<StoryChoice> choices() => [
+          for (final choice in json.children('choices'))
+            StoryChoice(id: choice.string('id'), label: choice.string('label')),
+        ];
+    return switch (json.string('kind')) {
+      StoryPoll.kindId =>
+        StoryPoll(question: json.string('question'), choices: choices()),
+      StoryQuiz.kindId => StoryQuiz(
+          question: json.string('question'),
+          choices: choices(),
+          correctChoiceId: json.string('correctChoiceId'),
+        ),
+      StoryQuestion.kindId => StoryQuestion(
+          prompt: json.string('prompt'),
+          placeholder: json.optionalString('placeholder') ?? 'Type something…',
+        ),
+      StorySlider.kindId => StorySlider(
+          question: json.string('question'),
+          emoji: json.optionalString('emoji') ?? '😍',
+        ),
+      StoryCountdown.kindId => StoryCountdown(
+          title: json.string('title'),
+          endsAt: json.optionalDateTime('endsAt') ??
+              json.fail('endsAt', 'Missing required timestamp'),
+        ),
+      StoryLink.kindId =>
+        StoryLink(url: _uri(json, 'url'), label: json.string('label')),
+      StoryProductTag.kindId => StoryProductTag(
+          productId: json.string('productId'),
+          name: json.string('name'),
+          priceLabel: json.optionalString('priceLabel'),
+        ),
+      StoryCustomInteraction.kindId => StoryCustomInteraction(
+          json.string('type'),
+          data: _jsonData(json, 'data'),
+        ),
+      final kind => json.fail('kind', 'Unknown interaction kind "$kind"'),
     };
   }
 

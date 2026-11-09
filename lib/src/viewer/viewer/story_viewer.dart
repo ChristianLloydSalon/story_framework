@@ -7,6 +7,7 @@ import '../../animations/story_transition.dart';
 import '../../animations/story_transition_registry.dart';
 import '../../animations/story_transition_switcher.dart';
 import '../../composition/document/story_document.dart';
+import '../../composition/elements/story_element.dart';
 import '../../composition/items/item_timing.dart';
 import '../../composition/items/story_item.dart';
 import '../../configuration/playback/story_playback_config.dart';
@@ -20,6 +21,7 @@ import '../../engine/state/story_selection.dart';
 import '../../engine/widgets/story_playback_selector.dart';
 import '../../gestures/handlers/default_gesture_handlers.dart';
 import '../../gestures/story_gesture_registry.dart';
+import '../../interactions/story_interaction_controller.dart';
 import '../../media/contracts/story_media_controller.dart';
 import '../../overlays/story_overlay.dart';
 import '../../rendering/options/story_render_options.dart';
@@ -81,6 +83,8 @@ class StoryViewer extends StatefulWidget {
     this.gestureRegistry,
     this.transitionRegistry,
     this.overlays = const [],
+    this.interactionController,
+    this.onInteraction,
     this.renderOptions = const StoryRenderOptions(),
     this.headerBuilder,
     this.footerBuilder,
@@ -103,6 +107,8 @@ class StoryViewer extends StatefulWidget {
     this.gestureRegistry,
     this.transitionRegistry,
     this.overlays = const [],
+    this.interactionController,
+    this.onInteraction,
     this.renderOptions = const StoryRenderOptions(),
     this.headerBuilder,
     this.footerBuilder,
@@ -156,6 +162,14 @@ class StoryViewer extends StatefulWidget {
   /// and footer.
   final List<StoryOverlay> overlays;
 
+  /// Interaction state for polls, quizzes, and other interactive elements,
+  /// or `null` for one owned by the viewer. Supply your own to seed results
+  /// or keep answers across viewer sessions.
+  final StoryInteractionController? interactionController;
+
+  /// Receives interactions when the viewer owns the interaction controller.
+  final StoryInteractionCallback? onInteraction;
+
   /// Rendering options for story content.
   final StoryRenderOptions renderOptions;
 
@@ -195,6 +209,7 @@ class _StoryViewerState extends State<StoryViewer> {
   StoryRendererRegistry? _ownedRegistry;
   StoryGestureRegistry? _ownedGestures;
   StoryTransitionRegistry? _ownedTransitions;
+  StoryInteractionController? _ownedInteractions;
   StoryAppLifecycleBinding? _lifecycle;
   // Cancelled in _detach whenever the controller changes or on dispose.
   // ignore: cancel_subscriptions
@@ -271,6 +286,7 @@ class _StoryViewerState extends State<StoryViewer> {
     _ownedRegistry?.dispose();
     _ownedGestures?.dispose();
     _ownedTransitions?.dispose();
+    _ownedInteractions?.dispose();
     super.dispose();
   }
 
@@ -332,6 +348,11 @@ class _StoryViewerState extends State<StoryViewer> {
         widget.gestureRegistry ?? (_ownedGestures ??= _defaultGestures());
     final transitions = widget.transitionRegistry ??
         (_ownedTransitions ??= StoryTransitionRegistry.withDefaults());
+    final interactions = widget.interactionController ??
+        (_ownedInteractions ??= StoryInteractionController(
+          // Reads the current widget, so a new callback takes effect.
+          onInteraction: (event) => widget.onInteraction?.call(event),
+        ));
 
     final parts = StoryViewerParts(
       controller: controller,
@@ -341,6 +362,15 @@ class _StoryViewerState extends State<StoryViewer> {
         transitions: transitions,
         options: widget.renderOptions,
         config: widget.config,
+        interactive: false,
+      ),
+      interactiveContent: _StoryViewerContent(
+        controller: controller,
+        registry: registry,
+        transitions: transitions,
+        options: widget.renderOptions,
+        config: widget.config,
+        interactive: true,
       ),
       gestures: StoryViewerGestureLayer(
         controller: controller,
@@ -363,8 +393,12 @@ class _StoryViewerState extends State<StoryViewer> {
       overlays: widget.overlays,
     );
 
-    return widget.layoutBuilder?.call(context, parts) ??
-        StoryViewerDefaultLayout(parts: parts, config: widget.config);
+    return StoryInteractionScope(
+      controller: interactions,
+      holdPlayback: () => controller.acquirePause(StoryPauseReason.interaction),
+      child: widget.layoutBuilder?.call(context, parts) ??
+          StoryViewerDefaultLayout(parts: parts, config: widget.config),
+    );
   }
 }
 
@@ -377,6 +411,7 @@ class _StoryViewerContent extends StatefulWidget {
     required this.transitions,
     required this.options,
     required this.config,
+    required this.interactive,
   });
 
   final StoryController controller;
@@ -384,6 +419,10 @@ class _StoryViewerContent extends StatefulWidget {
   final StoryTransitionRegistry transitions;
   final StoryRenderOptions options;
   final StoryViewerConfig config;
+
+  /// Whether this layer draws the interactive elements (above the gesture
+  /// layer) or everything else (below it).
+  final bool interactive;
 
   @override
   State<_StoryViewerContent> createState() => _StoryViewerContentState();
@@ -443,6 +482,10 @@ class _StoryViewerContentState extends State<_StoryViewerContent> {
     });
   }
 
+  static bool _isInteractive(StoryElement element) => element.isInteractive;
+
+  static bool _isStatic(StoryElement element) => !element.isInteractive;
+
   /// The transition into [item] at [location], or `null` to cut.
   StoryTransitionConfiguration? _transitionInto(
       (int, int) location, StoryItem item) {
@@ -487,6 +530,8 @@ class _StoryViewerContentState extends State<_StoryViewerContent> {
         item: item,
         registry: widget.registry,
         options: widget.options,
+        paintBackground: !widget.interactive,
+        elementFilter: widget.interactive ? _isInteractive : _isStatic,
       ),
     );
   }

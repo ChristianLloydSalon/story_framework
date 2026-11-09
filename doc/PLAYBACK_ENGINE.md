@@ -73,6 +73,12 @@ toggle `user`; `addPauseReason`/`removePauseReason` handle the others
 Buffering holds the timeline but keeps the media playing so it can recover;
 any other reason pauses the media too.
 
+`acquirePause(reason)` returns a `StoryPlaybackHold` for widgets that hold
+playback temporarily (typing a reply, dragging a slider, pressing an
+overlay). Holds are counted per reason, so independent widgets never
+release each other's pause, and `removePauseReason` does not clear them.
+`StoryPauseReason.interaction` is used for interactive content.
+
 ## Navigation
 
 `next`, `previous`, `nextGroup`, `previousGroup`, `jumpTo`, `jumpToItem`, and

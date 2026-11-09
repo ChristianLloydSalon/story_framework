@@ -27,6 +27,8 @@ CI runs the same checks plus `flutter pub publish --dry-run`.
 - New behavior needs tests. Use fakes and deterministic fixtures; avoid real
   timers and network access in unit tests.
 - Do not add a dependency until the feature that needs it is being built.
-- Changes to the serialized format must bump
-  `StoryDocumentCodec.currentSchemaVersion` and ship a migration.
+- Breaking changes to the serialized format must bump
+  `StoryDocumentCodec.currentSchemaVersion` and ship a migration. New element
+  types and interaction kinds are additive (older readers preserve them as
+  `UnknownElement`) and keep the version.
 - Update `CHANGELOG.md` under the next unreleased version.

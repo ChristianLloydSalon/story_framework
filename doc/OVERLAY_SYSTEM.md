@@ -37,7 +37,7 @@ StoryViewer(
 | `zIndex` | Paint order (ties keep list order) |
 | `respectSafeArea` | Avoid system UI in fullscreen layouts |
 | `interactive` | Whether it receives touches. Non-interactive overlays pass touches to the gesture layer |
-| `pauseWhileTouched` | Hold playback with `StoryPauseReason.external` while pressed |
+| `pauseWhileTouched` | Hold playback with `StoryPauseReason.interaction` while pressed (counted, so it never releases another widget's hold) |
 | `visibleWhen` | Show or hide from the playback state, with a fade (`fadeDuration`, zero under reduced motion) |
 | `onShow`, `onHide` | Called after visibility changes (and on first show) |
 

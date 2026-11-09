@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../core/contracts/story_playback_hold.dart';
 import '../core/enums/story_enums.dart';
 import '../core/models/playback_state.dart';
 import '../engine/controller/story_controller.dart';
@@ -64,7 +65,7 @@ final class StoryOverlay {
   final bool interactive;
 
   /// Whether touching the overlay holds playback with
-  /// [StoryPauseReason.external] until the finger lifts.
+  /// [StoryPauseReason.interaction] until the finger lifts.
   final bool pauseWhileTouched;
 
   /// Visibility rule, or `null` to always show. Captured when the overlay is
@@ -245,30 +246,22 @@ class _TouchHold extends StatefulWidget {
 }
 
 class _TouchHoldState extends State<_TouchHold> {
-  int _pointers = 0;
+  final Map<int, StoryPlaybackHold> _holds = {};
 
   void _down(PointerDownEvent event) {
-    _pointers++;
-    if (_pointers == 1 && !widget.controller.isDisposed) {
-      widget.controller.addPauseReason(StoryPauseReason.external);
-    }
+    if (widget.controller.isDisposed) return;
+    _holds[event.pointer] =
+        widget.controller.acquirePause(StoryPauseReason.interaction);
   }
 
-  void _up(PointerEvent event) {
-    if (_pointers == 0) return;
-    _pointers--;
-    if (_pointers == 0) _release();
-  }
-
-  void _release() {
-    if (!widget.controller.isDisposed) {
-      widget.controller.removePauseReason(StoryPauseReason.external);
-    }
-  }
+  void _up(PointerEvent event) => _holds.remove(event.pointer)?.release();
 
   @override
   void dispose() {
-    if (_pointers > 0) _release();
+    for (final hold in _holds.values) {
+      hold.release();
+    }
+    _holds.clear();
     super.dispose();
   }
 

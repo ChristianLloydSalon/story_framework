@@ -7,6 +7,7 @@ import '../../core/models/story_color.dart';
 import '../../core/models/story_source.dart';
 import '../contracts/story_element_renderer.dart';
 import '../conversions.dart';
+import 'interactive/story_interactive_renderer.dart';
 
 /// The renderers included by `StoryRendererRegistry.withDefaults`.
 List<StoryElementRenderer<StoryElement>> defaultStoryRenderers() => const [
@@ -16,6 +17,7 @@ List<StoryElementRenderer<StoryElement>> defaultStoryRenderers() => const [
       StoryShapeRenderer(),
       StoryDrawingRenderer(),
       StoryAudioRenderer(),
+      StoryInteractiveRenderer(),
     ];
 
 /// An image filling its box, with loading and error states.

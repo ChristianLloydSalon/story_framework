@@ -108,6 +108,10 @@ enum StoryPauseReason {
 
   /// Any other interruption reported by the host application.
   external,
+
+  /// The viewer is interacting with story content, such as dragging a
+  /// slider or typing a reply.
+  interaction,
 }
 
 /// Status of an individual media resource.

@@ -20,6 +20,7 @@ final class StoryViewerParts {
     required this.progress,
     required this.header,
     required this.footer,
+    this.interactiveContent = const SizedBox.shrink(),
     this.overlays = const [],
   });
 
@@ -31,6 +32,11 @@ final class StoryViewerParts {
 
   /// Tap, hold, swipe, and keyboard handling; fills its parent.
   final Widget gestures;
+
+  /// Interactive elements of the current item (polls, links, ...), aligned
+  /// with [content]. Place it above [gestures] so touching them never
+  /// navigates.
+  final Widget interactiveContent;
 
   /// Loading, buffering, and error overlays; fills its parent.
   final Widget statusOverlay;
@@ -84,6 +90,7 @@ class StoryViewerDefaultLayout extends StatelessWidget {
         children: [
           parts.content,
           parts.gestures,
+          parts.interactiveContent,
           parts.statusOverlay,
           StoryOverlayLayer(
             controller: parts.controller,
