@@ -25,4 +25,5 @@ export 'src/editor/selection/story_editor_selection.dart';
 export 'src/editor/tools/builtin_tools.dart';
 export 'src/editor/tools/story_editor_tool.dart';
 export 'src/editor/widgets/editor_controls.dart';
+export 'src/editor/widgets/editor_icons.dart';
 export 'src/editor/widgets/story_editor.dart';

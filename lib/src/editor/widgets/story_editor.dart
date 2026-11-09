@@ -212,6 +212,28 @@ class _StoryEditorState extends State<StoryEditor> {
     action(controller);
   }
 
+  /// Runs editor shortcuts, except while a text field has focus: typing,
+  /// deleting, and moving the caret must reach the field, not the editor.
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (_isTyping()) return KeyEventResult.ignored;
+    for (final MapEntry(key: activator, value: callback)
+        in _shortcuts.entries) {
+      if (activator.accepts(event, HardwareKeyboard.instance)) {
+        callback();
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
+  bool _isTyping() {
+    if (_controller.editingTextId != null) return true;
+    final focused = FocusManager.instance.primaryFocus?.context;
+    if (focused == null) return false;
+    return focused.widget is EditableText ||
+        focused.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
   Map<ShortcutActivator, VoidCallback> get _shortcuts {
     final config = _controller.config;
     final shortcuts = <ShortcutActivator, VoidCallback>{
@@ -276,6 +298,7 @@ class _StoryEditorState extends State<StoryEditor> {
       canvas: StoryEditorCanvas(
         controller: controller,
         tools: tools,
+        backgroundColor: const Color(0x00000000),
         renderers: renderers,
         renderOptions: widget.renderOptions,
       ),
@@ -289,8 +312,8 @@ class _StoryEditorState extends State<StoryEditor> {
 
     return DefaultTextStyle.merge(
       style: const TextStyle(color: StoryEditorColors.text, fontSize: 13),
-      child: CallbackShortcuts(
-        bindings: _shortcuts,
+      child: Focus(
+        onKeyEvent: _handleKey,
         child: Focus(
           autofocus: true,
           child: widget.layoutBuilder?.call(context, parts) ??
@@ -311,8 +334,8 @@ class StoryEditorDefaultLayout extends StatelessWidget {
   const StoryEditorDefaultLayout({
     required this.parts,
     this.wideBreakpoint = 720,
-    this.sidePanelWidth = 300,
-    this.timelineHeight = 168,
+    this.sidePanelWidth = 320,
+    this.timelineHeight = 176,
     super.key,
   });
 
@@ -330,49 +353,89 @@ class StoryEditorDefaultLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const gap = 10.0;
     return ColoredBox(
       color: StoryEditorColors.background,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= wideBreakpoint;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              parts.toolbar,
-              Expanded(
-                child: wide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(child: parts.canvas),
-                          SizedBox(
-                            width: sidePanelWidth,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(child: parts.layers),
-                                Expanded(flex: 2, child: parts.properties),
-                              ],
+          final canvas = ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: CustomPaint(
+              painter: const _DotGridPainter(),
+              child: parts.canvas,
+            ),
+          );
+          return Padding(
+            padding: const EdgeInsets.all(gap),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: parts.toolbar),
+                const SizedBox(height: gap),
+                Expanded(
+                  child: wide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: canvas),
+                            const SizedBox(width: gap),
+                            SizedBox(
+                              width: sidePanelWidth,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(flex: 2, child: parts.layers),
+                                  const SizedBox(height: gap),
+                                  Expanded(flex: 3, child: parts.properties),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(child: parts.canvas),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 160),
-                            child: parts.properties,
-                          ),
-                        ],
-                      ),
-              ),
-              SizedBox(height: timelineHeight, child: parts.timeline),
-            ],
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: canvas),
+                            const SizedBox(height: gap),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 200),
+                              child: parts.properties,
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: gap),
+                SizedBox(
+                  height: wide ? timelineHeight : timelineHeight * 0.85,
+                  child: parts.timeline,
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
+}
+
+/// A subtle dotted workspace behind the canvas.
+final class _DotGridPainter extends CustomPainter {
+  const _DotGridPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+        Offset.zero & size, Paint()..color = const Color(0xFF111118));
+    final dot = Paint()..color = const Color(0xFF262631);
+    const spacing = 22.0;
+    for (var y = spacing / 2; y < size.height; y += spacing) {
+      for (var x = spacing / 2; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.1, dot);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DotGridPainter oldDelegate) => false;
 }

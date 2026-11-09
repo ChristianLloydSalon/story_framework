@@ -10,6 +10,14 @@
     renderers after their images load.
 - The editor now inherits the app's text style (font family) instead of
   replacing it.
+- Redesigned default editor UI: floating panels on a dotted workspace,
+  a vector icon set drawn in code (`StoryEditorIcons`, `StoryEditorIcon`,
+  `StoryEditorTool.icon`), hover and press states, labeled steppers
+  (`StoryEditorStepper`), button groups, `StoryEditorPanel`, and a toolbar
+  that keeps undo and redo visible on phones.
+- Fixed: Backspace, Delete, arrows, and Ctrl/Cmd shortcuts were swallowed
+  by editor shortcuts while editing text, and the inline text field did not
+  receive focus.
 - Performance budget tests for large documents, edit history, and progress
   rebuilds.
 - pub.dev metadata, screenshots, and a README with examples from basic to

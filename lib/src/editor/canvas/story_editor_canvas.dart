@@ -108,6 +108,20 @@ class _StoryEditorCanvasState extends State<StoryEditorCanvas> {
                       child: ColoredBox(color: widget.backgroundColor)),
                   Positioned.fromRect(
                     rect: mapping.canvasRect,
+                    child: const DecoratedBox(
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x80000000),
+                            blurRadius: 32,
+                            offset: Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned.fromRect(
+                    rect: mapping.canvasRect,
                     child: FittedBox(
                       fit: BoxFit.fill,
                       child: SizedBox(
@@ -743,8 +757,15 @@ class _StoryInlineTextEditorState extends State<StoryInlineTextEditor> {
   @override
   void initState() {
     super.initState();
-    _text = TextEditingController(text: widget.element.text);
+    final text = widget.element.text;
+    _text = TextEditingController(text: text)
+      ..selection = TextSelection.collapsed(offset: text.length);
     _focus.addListener(_onFocusChanged);
+    // `autofocus` is ignored when something in the scope already has focus
+    // (the editor itself usually does), so ask for focus explicitly.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
   }
 
   @override

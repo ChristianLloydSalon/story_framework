@@ -4,6 +4,7 @@ import '../../core/errors/story_exceptions.dart';
 import '../../core/models/geometry.dart';
 import '../canvas/story_editor_viewport.dart';
 import '../controller/story_editor_controller.dart';
+import '../widgets/editor_icons.dart';
 
 /// Everything a tool needs to act on a canvas gesture.
 @immutable
@@ -45,8 +46,12 @@ abstract class StoryEditorTool {
   /// Accessible name, such as "Text".
   String get label;
 
-  /// Short glyph shown on the toolbar button, such as "T".
+  /// Short glyph shown on the toolbar button, such as "T", when there is
+  /// no [icon].
   String get symbol;
+
+  /// The toolbar icon, or `null` to show [symbol].
+  StoryEditorIcons? get icon => null;
 
   /// Whether selection outlines and transform handles are shown while this
   /// tool is active.

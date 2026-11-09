@@ -92,6 +92,34 @@ void main() {
     expect(changes, hasLength(5));
   });
 
+  testWidgets('keys reach the text while editing inline', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final controller = editorFor(editorDoc());
+    addTearDown(controller.dispose);
+    // DefaultTextEditingShortcuts is what an app's WidgetsApp provides.
+    await tester.pumpWidget(_Host(
+      child: DefaultTextEditingShortcuts(
+        child: StoryEditor(controller: controller),
+      ),
+    ));
+    controller.beginTextEditing('t1');
+    await tester.pump();
+    await tester.pump();
+
+    // Backspace and Delete edit the text instead of deleting the element.
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    expect(controller.elementById('t1'), isNotNull);
+    final text = controller.elementById('t1');
+    expect(text is TextElement ? text.text : null, isEmpty);
+    expect(controller.editingTextId, 't1');
+  });
+
   testWidgets('toolbar undo and redo reflect history', (tester) async {
     final controller = await pumpEditor(tester);
     expect(

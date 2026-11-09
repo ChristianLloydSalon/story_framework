@@ -140,6 +140,18 @@ StoryDocument showcase() => StoryDocument(id: 'showcase', groups: [
       ]),
     ]);
 
+/// Captures the first repaint boundary. Each test turns on real (blurred)
+/// shadows first, since tests draw them without blur by default; this
+/// restores the default, as the test binding requires.
+Future<void> _capture(WidgetTester tester, Object golden) async {
+  try {
+    await expectLater(
+        find.byType(RepaintBoundary).first, matchesGoldenFile(golden));
+  } finally {
+    debugDisableShadows = true;
+  }
+}
+
 class _Frame extends StatelessWidget {
   const _Frame({required this.size, required this.child});
 
@@ -194,23 +206,24 @@ void main() {
   }
 
   testWidgets('viewer', (tester) async {
+    debugDisableShadows = false;
     await viewer(tester, startAt: 'welcome');
-    await expectLater(find.byType(RepaintBoundary).first,
-        matchesGoldenFile('../doc/screenshots/viewer.png'));
+    await _capture(tester, '../doc/screenshots/viewer.png');
   });
 
   testWidgets('interactive', (tester) async {
+    debugDisableShadows = false;
     final interactions = StoryInteractionController(initialStates: {
       'poll-sticker': StoryChoiceState(
           selectedChoiceId: 'spaces', counts: const {'tabs': 38, 'spaces': 62}),
     });
     addTearDown(interactions.dispose);
     await viewer(tester, startAt: 'poll', interactions: interactions);
-    await expectLater(find.byType(RepaintBoundary).first,
-        matchesGoldenFile('../doc/screenshots/interactive.png'));
+    await _capture(tester, '../doc/screenshots/interactive.png');
   });
 
   testWidgets('editor', (tester) async {
+    debugDisableShadows = false;
     tester.view.physicalSize = const Size(2560, 1600);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
@@ -225,7 +238,25 @@ void main() {
       child: StoryEditor(controller: editor),
     ));
     await tester.pump();
-    await expectLater(find.byType(RepaintBoundary).first,
-        matchesGoldenFile('../doc/screenshots/editor.png'));
+    await _capture(tester, '../doc/screenshots/editor.png');
+  });
+
+  testWidgets('editor on a phone', (tester) async {
+    debugDisableShadows = false;
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final editor = StoryEditorController(
+      document: showcase(),
+      idGenerator: SequentialStoryIdGenerator(),
+    );
+    addTearDown(editor.dispose);
+    editor.select(['t1']);
+    await tester.pumpWidget(_Frame(
+      size: const Size(390, 844),
+      child: StoryEditor(controller: editor),
+    ));
+    await tester.pump();
+    await _capture(tester, '../doc/screenshots/editor_mobile.png');
   });
 }

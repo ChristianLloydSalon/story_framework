@@ -10,6 +10,7 @@ import '../../core/models/story_source.dart';
 import '../controller/story_editor_controller.dart';
 import '../geometry/element_geometry.dart';
 import '../geometry/story_snapping.dart';
+import '../widgets/editor_icons.dart';
 import 'story_editor_tool.dart';
 
 /// Picks media for the image and video tools, or `null` if cancelled.
@@ -62,6 +63,9 @@ final class StorySelectTool extends StoryEditorTool {
 
   @override
   String get symbol => '↖';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.select;
 
   @override
   void onTap(StoryToolContext context, StoryPoint point) {
@@ -206,6 +210,9 @@ final class StoryTextTool extends StoryEditorTool {
   String get symbol => 'T';
 
   @override
+  StoryEditorIcons get icon => StoryEditorIcons.text;
+
+  @override
   void onTap(StoryToolContext context, StoryPoint point) {
     final controller = context.controller;
     final canvas = controller.document.canvas;
@@ -247,6 +254,9 @@ final class StoryStickerTool extends StoryEditorTool {
 
   @override
   String get symbol => '☺';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.sticker;
 
   @override
   void onTap(StoryToolContext context, StoryPoint point) {
@@ -300,6 +310,9 @@ final class StoryImageTool extends StoryEditorTool {
   String get symbol => '▣';
 
   @override
+  StoryEditorIcons get icon => StoryEditorIcons.image;
+
+  @override
   void onTap(StoryToolContext context, StoryPoint point) {
     unawaited(picker().then((source) {
       final controller = context.controller;
@@ -340,6 +353,9 @@ final class StoryVideoTool extends StoryEditorTool {
 
   @override
   String get symbol => '▶';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.video;
 
   @override
   void onTap(StoryToolContext context, StoryPoint point) {
@@ -389,6 +405,9 @@ final class StoryShapeTool extends StoryEditorTool {
 
   @override
   String get symbol => '□';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.shape;
 
   ShapeElement _shape(String id, StoryRect rect) => ShapeElement(
         id: id,
@@ -488,6 +507,9 @@ class StoryDrawTool extends StoryEditorTool {
 
   @override
   String get symbol => '✎';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.draw;
 
   @override
   bool get showsSelection => false;
@@ -601,6 +623,9 @@ final class StoryEraserTool extends StoryDrawTool {
 
   @override
   String get symbol => '⌫';
+
+  @override
+  StoryEditorIcons get icon => StoryEditorIcons.eraser;
 
   @override
   StoryDrawingTool get strokeTool => StoryDrawingTool.eraser;
