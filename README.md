@@ -376,13 +376,14 @@ looks the same everywhere. See the [rendering guide](doc/RENDERING_SYSTEM.md).
 
 ## Example app
 
-[`example/`](example/) has a story tray, the viewer with video and stickers,
-and the editor with a live preview:
+Each of the ten examples above can be run on its own from
+[`example/lib/examples/`](example/lib/examples/):
 
 ```bash
 cd example
 flutter create . --platforms=android,ios,web
-flutter run
+flutter run                                          # gallery of all examples
+flutter run -t lib/examples/04_interactive_stickers/main.dart
 ```
 
 ## Documentation

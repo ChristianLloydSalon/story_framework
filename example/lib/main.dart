@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:story_framework/story_framework.dart';
 
+import 'examples/gallery.dart';
 import 'media/just_audio_adapter.dart';
 import 'media/video_player_adapter.dart';
 import 'sample_stories.dart';
@@ -64,6 +65,9 @@ class StoryTrayPage extends StatelessWidget {
             'go back, hold to pause, swipe sideways to switch people, and '
             'swipe down to close.',
           ),
+          const SizedBox(height: 24),
+          Text('Examples', style: Theme.of(context).textTheme.titleLarge),
+          const ExampleGallery(),
         ],
       ),
     );
