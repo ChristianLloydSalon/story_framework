@@ -11,7 +11,8 @@ a small number of public entry points.
 | Core | `lib/src/core/` | ✅ | Value types, sources, enums, errors, playback state, JSON utilities |
 | Composition | `lib/src/composition/` | ✅ | Document model, elements, serialization, validation |
 | Media | `lib/src/media/` | Contracts only | Media controller contracts; integrations come in Phase 6 |
-| Engine | `lib/src/engine/` | Planned (Phase 2) | Headless playback controller, timeline, navigation |
+| Engine | `lib/src/engine/` | ✅ | Headless playback controller, timeline, navigation, lifecycle |
+| Configuration | `lib/src/configuration/` | Playback only | Immutable configuration objects |
 | Rendering | `lib/src/viewer/rendering/` | Planned (Phase 3) | Renderer contract and registry |
 | Viewer | `lib/src/viewer/` | Planned (Phase 4–5) | Default viewer UI, progress, overlays |
 | Gestures | `lib/src/gestures/` | Planned (Phase 5) | Gesture registry and handlers |
@@ -41,7 +42,9 @@ exist):
 2. `composition` imports only `core`. No Flutter imports, so it works in
    background isolates and widget-free tests. (The package as a whole still
    depends on the Flutter SDK.)
-3. `engine` must not import `viewer` or `editor`.
+3. `engine` must not import `viewer` or `editor`. It may use
+   `package:flutter/foundation.dart` (for `ValueListenable`); only the optional
+   `StoryAppLifecycleBinding` imports `package:flutter/widgets.dart`.
 4. `editor` must not import `viewer` or `engine`.
 5. `viewer` and `editor` share the composition model and rendering contracts.
 6. `export` must not import `viewer`.
@@ -60,6 +63,7 @@ exist):
   | `story_framework.dart` | All public entry points |
   | `composition.dart` | `core` + `composition` |
   | `media.dart` | `composition.dart` + media contracts |
+  | `engine.dart` | `media.dart` + playback controller, config, clock, events, lifecycle |
 
 - Helpers needed only inside the package (for example `JsonReader`,
   `freezeJsonMap`) are not exported.

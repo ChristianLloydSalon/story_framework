@@ -6,9 +6,9 @@ Snapchat, or WhatsApp Status — with no forced UI, backend, media provider, or
 state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
-> serialization, and validation are implemented. The playback engine, viewer,
-> editor, and export pipeline are planned; see [Roadmap](#roadmap). APIs may
-> change before 1.0.
+> serialization, validation, and the headless playback engine are
+> implemented. The viewer, editor, and export pipeline are planned; see
+> [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
 
@@ -22,6 +22,9 @@ state-management library.
 - **Validation** with error/warning severities, stable codes, and pluggable
   rules.
 - **Media contracts** for plugging in any video or audio package.
+- **Headless playback engine** (`StoryController`): drift-free timeline,
+  navigation, independent pause reasons, speed, seeking, media-driven
+  durations, lifecycle handling, and safe cancellation on rapid navigation.
 
 ## Install
 
@@ -78,6 +81,19 @@ final restored = codec.decodeFromString(json);
 assert(restored == document);
 ```
 
+### Headless playback
+
+```dart
+import 'package:story_framework/engine.dart';
+
+final controller = StoryController(document: document);
+final itemIndex = controller.select((state) => state.itemIndex);
+itemIndex.addListener(() => print('Now showing item ${itemIndex.value}'));
+controller.play();
+// ... controller.next(), controller.pause(), controller.seekTo(...)
+await controller.dispose();
+```
+
 ## Entry points
 
 | Import | Contents |
@@ -85,9 +101,10 @@ assert(restored == document);
 | `package:story_framework/story_framework.dart` | Everything public |
 | `package:story_framework/composition.dart` | Documents, elements, serialization, validation (no widgets) |
 | `package:story_framework/media.dart` | Media controller contracts |
+| `package:story_framework/engine.dart` | Headless playback controller |
 
-Viewer, editor, engine, animation, and export entry points will be added with
-their modules.
+Viewer, editor, animation, and export entry points will be added with their
+modules.
 
 ## Roadmap
 
@@ -95,7 +112,7 @@ their modules.
 |---|---|---|
 | 0 | Package foundation, CI, architecture docs | ✅ |
 | 1 | Core domain and composition model | ✅ |
-| 2 | Headless playback engine | Planned |
+| 2 | Headless playback engine | ✅ |
 | 3 | Rendering foundation | Planned |
 | 4–5 | Story viewer and customization | Planned |
 | 6 | Media integrations and caching | Planned |
@@ -109,5 +126,6 @@ their modules.
 - [Architecture](doc/ARCHITECTURE.md)
 - [Domain model](doc/DOMAIN_MODEL.md)
 - [Serialization and validation](doc/COMPOSITION_SYSTEM.md)
+- [Playback engine](doc/PLAYBACK_ENGINE.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
