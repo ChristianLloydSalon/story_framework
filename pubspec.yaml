@@ -1,9 +1,8 @@
 name: story_framework
 description: >-
-  A customizable Flutter story viewer and editor framework with a shared
-  composition model, headless playback, pluggable rendering, and extensible
-  media, gestures, transitions, and export.
-version: 0.1.0-dev.1
+  Instagram-style stories for Flutter: a customizable viewer, a full editor,
+  interactive stickers, video and audio, and export, with no dependencies.
+version: 0.1.0
 repository: https://github.com/ChristianLloydSalon/story_framework
 issue_tracker: https://github.com/ChristianLloydSalon/story_framework/issues
 topics:
@@ -12,6 +11,14 @@ topics:
   - editor
   - media
   - widget
+
+screenshots:
+  - description: The story viewer with segmented progress and a header.
+    path: doc/screenshots/viewer.png
+  - description: Interactive poll and link stickers.
+    path: doc/screenshots/interactive.png
+  - description: The story editor with layers, tools, and a timeline.
+    path: doc/screenshots/editor.png
 
 environment:
   sdk: ^3.5.0

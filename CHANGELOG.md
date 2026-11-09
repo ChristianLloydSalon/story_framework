@@ -1,4 +1,19 @@
-## Unreleased
+## 0.1.0
+
+- Export (`package:story_framework/export.dart`):
+  - `StoryExporterRegistry` with validation, cancellable `StoryExportJob`s,
+    and progress reporting.
+  - `StoryDocumentExporter` (JSON), `StoryPngExporter` (one PNG per item),
+    and `StoryVideoExporter` (a slideshow video through an app-supplied
+    `StoryVideoEncoder`, with audio tracks).
+  - `StoryItemSnapshotter` renders items offscreen with the viewer's
+    renderers after their images load.
+- The editor now inherits the app's text style (font family) instead of
+  replacing it.
+- Performance budget tests for large documents, edit history, and progress
+  rebuilds.
+- pub.dev metadata, screenshots, and a README with examples from basic to
+  advanced.
 
 - Video and audio support with no player dependency:
   - `StoryVisualMediaController` for media with frames, and

@@ -20,7 +20,7 @@ a small number of public entry points.
 | Overlays | `lib/src/overlays/` | ✅ | Overlay descriptors and overlay layer |
 | Interactions | `lib/src/interactions/` | ✅ | Interaction state, events, controller, scope |
 | Editor | `lib/src/editor/` | ✅ | Editor controller, commands and history, canvas, tools, default UI |
-| Export | `lib/src/export/` | Planned (Phase 11) | Exporter registry and pipeline |
+| Export | `lib/src/export/` | ✅ | Exporter contract and registry, offscreen item snapshots, JSON, PNG, and video exporters |
 
 Directories are created when their module is implemented, not before.
 
@@ -74,6 +74,7 @@ exist):
   | `viewer.dart` | `engine.dart` + `rendering.dart` + `animations.dart` + viewer, gestures, overlays |
   | `animations.dart` | `composition.dart` + transitions |
   | `editor.dart` | `rendering.dart` + `animations.dart` + the story editor |
+  | `export.dart` | `rendering.dart` + exporters, snapshots, video encoder contract |
 
 - Helpers needed only inside the package (for example `JsonReader`,
   `freezeJsonMap`) are not exported.

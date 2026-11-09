@@ -12,14 +12,14 @@
 ///   overlays.
 /// * `package:story_framework/animations.dart` — story transitions.
 /// * `package:story_framework/editor.dart` — the story editor.
-///
-/// The export entry point is added when that module is implemented.
+/// * `package:story_framework/export.dart` — export to JSON, PNG, and video.
 library;
 
 export 'animations.dart';
 export 'composition.dart';
 export 'editor.dart';
 export 'engine.dart';
+export 'export.dart';
 export 'media.dart';
 export 'rendering.dart';
 export 'viewer.dart';

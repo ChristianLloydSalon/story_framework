@@ -1,84 +1,251 @@
 # Story Framework
 
-A modular Flutter framework for creating, editing, composing, and playing
-multimedia stories — the kind of experience found in Instagram Stories,
-Snapchat, or WhatsApp Status — with no forced UI, backend, media provider, or
-state-management library.
+Instagram-style stories for Flutter: a customizable **viewer**, a full
+**editor**, **interactive stickers**, **video and audio**, and **export**. It is
+built on one shared document model and has **no third-party runtime
+dependencies**.
 
-> **Status: early development (`0.1.0-dev`).** The shared composition model,
-> serialization, validation, the headless playback engine, rendering, a
-> customizable story viewer, interactive stickers, the story editor, and
-> player-independent video and audio support are implemented. The export
-> pipeline is planned; see
-> [Roadmap](#roadmap). APIs may change before 1.0.
+<p>
+  <img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/viewer.png" alt="Story viewer" width="220">
+  <img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/interactive.png" alt="Interactive poll and link stickers" width="220">
+</p>
+<img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/editor.png" alt="Story editor" width="660">
 
-## What works today
+## Features
 
-- **One shared document model** for the editor, viewer, and exporter:
-  `StoryDocument` → `StoryGroup` → `StoryItem` → `StoryElement`.
-- **Element types:** image, video, audio, text, sticker (emoji, image,
-  provider), shape, freehand drawing (vector strokes), app widget, and custom.
-- **Immutable values** with structural equality and `copyWith`.
-- **Versioned JSON serialization** with migrations, precise error paths, and
-  lossless preservation of element types from newer versions.
-- **Validation** with error/warning severities, stable codes, and pluggable
-  rules.
-- **Media contracts** for plugging in any video or audio package.
-- **Headless playback engine** (`StoryController`): drift-free timeline,
-  navigation, independent pause reasons, speed, seeking, media-driven
-  durations, lifecycle handling, and safe cancellation on rapid navigation.
-- **Story viewer** (`StoryViewer`): segmented progress, header and footer,
-  tap/hold/swipe/keyboard navigation, loading and error overlays, background
-  pausing, fullscreen or inline layout, and replaceable parts. Progress ticks
-  repaint only the progress bar.
-- **Customization systems**: a gesture registry with priorities, drag
-  ownership, and cancellation; eight transition presets plus custom
-  transitions, with reduced-motion support; and independently composed
-  overlays with z-order, visibility rules, and touch handling.
-- **Interactive content**: polls, quizzes, questions, sliders, countdowns,
-  links, and product tags that never interfere with navigation, report
-  every interaction to your app, and are screen-reader and keyboard
-  accessible.
-- **Story editor**: command-based undo/redo with transactions and history
-  limits; selection and multi-selection; transform handles, snapping, and
-  alignment; layer management; extensible tools; a timeline; keyboard
-  shortcuts; and accessible panels for every canvas gesture.
-- **Video and audio, with no player dependency**: plug in any player through
-  small adapters (ready-made `video_player` and `just_audio` adapters are in
-  the example). Companion media sync, next-item preloading, bounded
-  resources, image prefetching, and an optional memory byte cache with
-  shared, cancellable requests.
-- **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
-  using a pluggable renderer registry. Built-in renderers cover images, text,
-  stickers, shapes, and drawings, with app-defined widget and custom elements.
+- **Viewer**:
+  - Segmented progress, tap, hold, swipe, and keyboard navigation.
+  - Swipe down to dismiss; cube, fade, slide, zoom and other transitions.
+  - Overlays, loading and error states, and fullscreen or inline layout.
+  - Every part can be replaced.
+- **Editor**:
+  - Move, scale, and rotate with snapping and alignment guides.
+  - Text, sticker, shape, draw, and eraser tools.
+  - Layers, a timeline, and undo/redo with transactions.
+  - Keyboard shortcuts and accessible panels.
+- **Interactive content**:
+  - Polls, quizzes, questions, sliders, countdowns, links, and product tags.
+  - Every interaction is reported to your app.
+- **Video and audio with any player**:
+  - Adapters are a few dozen lines; `video_player` and `just_audio` versions
+    are in the example.
+  - Synced companion media and next-item preloading.
+  - A memory byte cache.
+- **Export**:
+  - Export the document as JSON, each item as a PNG, or a slideshow video
+    through your own encoder.
+- **Headless engine**:
+  - `StoryController` runs a drift-free timeline with no UI.
+  - Use it to build a completely custom viewer.
+- **Versioned JSON**:
+  - Migrations and validation.
+  - Unknown element types from newer versions are preserved, not dropped.
 
 ## Install
 
 ```yaml
 dependencies:
-  story_framework: ^0.1.0-dev.1
+  story_framework: ^0.1.0
 ```
 
-## Show stories
+Import everything with `package:story_framework/story_framework.dart`, or only
+the part you use (see [entry points](#entry-points)).
+
+## Examples, from basic to advanced
+
+### 1. Show a story
 
 ```dart
-import 'package:story_framework/viewer.dart';
+import 'package:flutter/material.dart';
+import 'package:story_framework/story_framework.dart';
 
-StoryViewer(
-  document: document,
-  onDismiss: () => Navigator.pop(context),
-  onComplete: () => Navigator.pop(context),
+final document = StoryDocument(
+  id: 'demo',
+  groups: [
+    StoryGroup(id: 'ada', title: 'Ada', items: [
+      StoryItem(
+        id: 'hello',
+        background: StoryGradientBackground(colors: const [
+          StoryColor(0xFF6A11CB),
+          StoryColor(0xFF2575FC),
+        ]),
+        elements: [
+          TextElement(
+            id: 'title',
+            // Canvas units: the default canvas is 1080×1920.
+            transform: const StoryTransform(
+              position: StoryPoint(540, 960),
+              size: StorySize(900, 300),
+            ),
+            text: 'Hello, stories!',
+            style: StoryTextStyle(fontSize: 110, fontWeight: 800),
+          ),
+        ],
+      ),
+    ]),
+  ],
+);
+
+class StoryPage extends StatelessWidget {
+  const StoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => StoryViewer(
+        document: document,
+        onDismiss: () => Navigator.pop(context),
+        onComplete: () => Navigator.pop(context),
+      );
+}
+```
+
+Tap right to go forward and left to go back. Hold to pause, swipe sideways to
+change groups, and swipe down to dismiss.
+
+### 2. Images, durations, and transitions
+
+```dart
+StoryItem(
+  id: 'beach',
+  duration: const FixedItemDuration(Duration(seconds: 8)),
+  transition: const StoryTransitionConfiguration.preset('fade'),
+  elements: [
+    ImageElement(
+      id: 'photo',
+      transform: const StoryTransform(
+        position: StoryPoint(540, 960),
+        size: StorySize(1080, 1920),
+      ),
+      source: NetworkStorySource(Uri.parse('https://example.com/beach.jpg')),
+      semanticLabel: 'Sunset over the beach',
+    ),
+  ],
 )
 ```
 
-Tap the right side to go forward and the left side to go back. Hold to pause,
-swipe sideways to change groups (with a cube transition), and swipe down to
-dismiss. Gestures, transitions, and overlays are all pluggable. Keyboard
-shortcuts and screen-reader buttons are included. The header, footer,
-progress bar, loading and error overlays, or the whole layout can be replaced.
-See the [example app](example/lib/main.dart).
+The viewer prefetches the next item's images. Presets are `none`, `fade`,
+`slide`, `scale`, `zoom`, `cube`, and `reveal`. Users who ask for reduced
+motion get a short fade automatically.
 
-## Edit stories
+### 3. Configure and customize the viewer
+
+```dart
+StoryViewer(
+  document: document,
+  config: const StoryViewerConfig(
+    previousTapFraction: 0.25,
+    groupTransition: StoryTransitionConfiguration.preset('cube'),
+  ),
+  playbackConfig: const StoryPlaybackConfig(
+    defaultItemDuration: Duration(seconds: 6),
+  ),
+  footerBuilder: (context, controller) => const ReplyBar(),
+  overlays: [
+    StoryOverlay(
+      id: 'paused',
+      alignment: AlignmentDirectional.center,
+      interactive: false,
+      visibleWhen: (state) =>
+          state.pauseReasons.contains(StoryPauseReason.user),
+      builder: (context, controller) => const PausedBadge(),
+    ),
+  ],
+)
+```
+
+The header, footer, progress bar, and loading and error states each have a
+builder. `layoutBuilder` replaces the whole layout. Gestures and transitions
+use registries, so you can add your own (see the
+[gesture](doc/GESTURE_SYSTEM.md) and [transition](doc/TRANSITION_SYSTEM.md)
+guides).
+
+### 4. Interactive stickers
+
+```dart
+InteractiveElement(
+  id: 'poll',
+  transform: const StoryTransform(
+    position: StoryPoint(540, 1200),
+    size: StorySize(880, 560),
+  ),
+  interaction: StoryPoll(question: 'Tabs or spaces?', choices: const [
+    StoryChoice(id: 'tabs', label: 'Tabs'),
+    StoryChoice(id: 'spaces', label: 'Spaces'),
+  ]),
+)
+```
+
+```dart
+StoryViewer(
+  document: document,
+  onInteraction: (event) => switch (event) {
+    StoryChoiceSelectedEvent(:final choiceId) => api.vote(choiceId),
+    StoryLinkTappedEvent(:final url) => launchUrl(url),
+    StoryQuestionRepliedEvent(:final text) => api.reply(text),
+    _ => null,
+  },
+)
+```
+
+Stickers never trigger navigation, and they work with screen readers and the
+keyboard. To show saved votes or results, pass a
+`StoryInteractionController(initialStates: ...)`.
+
+### 5. Video and audio with your own player
+
+story_framework doesn't depend on any player. Copy an adapter from
+[`example/lib/media/`](example/lib/media/) into your app (`video_player` and
+`just_audio` are ready to use), or write one for any player:
+
+```dart
+StoryViewer(
+  document: document,
+  mediaFactories: const [
+    VideoPlayerStoryMediaFactory(),
+    JustAudioStoryMediaFactory(),
+  ],
+)
+```
+
+```dart
+StoryItem(
+  id: 'clip',
+  duration: const MediaItemDuration(elementId: 'video'),
+  elements: [
+    VideoElement(
+      id: 'video',
+      transform: const StoryTransform(
+        position: StoryPoint(540, 960),
+        size: StorySize(1080, 1920),
+      ),
+      source: NetworkStorySource(Uri.parse('https://example.com/clip.mp4')),
+      poster: NetworkStorySource(Uri.parse('https://example.com/clip.jpg')),
+    ),
+    AudioElement(id: 'music', source: const AssetStorySource('assets/song.mp3')),
+  ],
+)
+```
+
+The item lasts as long as its video. Other media on the item plays in sync
+with the timeline. The next item's media is preloaded. See the
+[media guide](doc/MEDIA_SYSTEM.md).
+
+Images can use a shared, memory-bounded byte cache:
+
+```dart
+final loader = StoryResourceLoader(
+  fetcher: createStoryHttpFetcher(),
+  cache: MemoryStoryCache(maxBytes: 32 * 1024 * 1024),
+);
+
+StoryViewer(
+  document: document,
+  renderOptions: StoryRenderOptions(
+    imageResolver: DefaultStoryImageResolver(networkLoader: loader),
+  ),
+)
+```
+
+### 6. The story editor
 
 ```dart
 import 'package:story_framework/editor.dart';
@@ -89,83 +256,109 @@ StoryEditor(
 )
 ```
 
-The editor provides a canvas with selection, move, scale, rotate, snapping,
-and alignment guides; text, sticker, shape, drawing, and eraser tools (plus
-image and video tools with your own pickers); layers; a timeline for story
-order, durations, and transitions; and undo/redo. Use the whole UI, or just
-`StoryEditorController` and `StoryEditorCanvas` in your own.
-
-## Build documents
+The editor UI is ready to use. To build your own UI, use the pieces directly:
 
 ```dart
-import 'package:story_framework/composition.dart';
+final editor = StoryEditorController(document: draft);
 
-final document = StoryDocument(
-  id: 'trip',
-  canvas: StoryCanvasConfiguration.portrait, // 1080×1920
-  groups: [
-    StoryGroup(id: 'alice', title: 'Alice', items: [
-      StoryItem(
-        id: 'beach',
-        duration: const FixedItemDuration(Duration(seconds: 5)),
-        elements: [
-          ImageElement(
-            id: 'photo',
-            transform: const StoryTransform(
-              position: StoryPoint(540, 960), // center, canvas units
-              size: StorySize(1080, 1920),
-            ),
-            source: NetworkStorySource(Uri.parse('https://example.com/a.jpg')),
-            semanticLabel: 'Sunset over the beach',
-          ),
-          TextElement(
-            id: 'caption',
-            transform: const StoryTransform(
-              position: StoryPoint(540, 300),
-              size: StorySize(900, 160),
-            ),
-            text: 'Day one 🌴',
-            zIndex: 1,
-          ),
-        ],
-      ),
-    ]),
-  ],
-);
+editor.select(['title']);
+editor.nudgeSelection(10, 0);           // one undoable command
+editor.runTransaction('Restyle', () {      // many edits, one undo step
+  editor.nudgeSelection(0, 20);
+  editor.duplicateSelection();
+});
+editor.undo();
 
-// Validate.
-const StoryDocumentValidator().validateOrThrow(document);
-
-// Save and restore.
-const codec = StoryDocumentCodec();
-final json = codec.encodeToString(document);
-final restored = codec.decodeFromString(json);
-assert(restored == document);
+StoryEditorCanvas(controller: editor);  // canvas, handles, and snapping only
 ```
 
-### Headless playback
+The image and video tools call your own pickers. You can register custom
+tools with `StoryEditorToolRegistry`. See the
+[editor guide](doc/EDITOR_SYSTEM.md).
+
+### 7. Save, load, and validate
+
+```dart
+const codec = StoryDocumentCodec();
+final json = codec.encodeToString(document);   // versioned JSON
+final restored = codec.decodeFromString(json); // older versions migrate
+
+final report = const StoryDocumentValidator().validate(restored);
+for (final issue in report.issues) {
+  print('${issue.severity} ${issue.code} at ${issue.path}: ${issue.message}');
+}
+```
+
+### 8. Export
+
+```dart
+import 'package:story_framework/export.dart';
+
+final exporters = StoryExporterRegistry([
+  const StoryDocumentExporter(),     // .story.json
+  StoryPngExporter(),                // one PNG per item
+  StoryVideoExporter(MyFfmpegEncoder()), // your encoder
+]);
+
+final job = exporters.export(
+  document,
+  const StoryExportConfig(format: StoryExportFormat.png, width: 1080),
+);
+job.progress.addListener(() => print(job.progress.value));
+final result = await job.result; // job.cancel() stops it
+for (final file in result.outputs) {
+  await File(file.name).writeAsBytes(file.bytes);
+}
+```
+
+Items are rendered offscreen with the same renderers the viewer uses. Images
+are loaded before capture. Video export holds each item's frame for its
+duration and gives the item's audio to your `StoryVideoEncoder`. See the
+[export guide](doc/EXPORT_SYSTEM.md).
+
+### 9. Headless playback for a custom viewer
 
 ```dart
 import 'package:story_framework/engine.dart';
 
 final controller = StoryController(document: document);
-final itemIndex = controller.select((state) => state.itemIndex);
-itemIndex.addListener(() => print('Now showing item ${itemIndex.value}'));
+final item = controller.select((state) => state.itemIndex);
+item.addListener(() => print('Now on item ${item.value}'));
+
 controller.play();
-// ... controller.next(), controller.pause(), controller.seekTo(...)
+controller.next();
+final hold = controller.acquirePause(StoryPauseReason.interaction);
+hold.release();
 await controller.dispose();
 ```
 
-### Rendering an item
+Pass the controller to `StoryViewer.controller(...)`, or build your own UI on
+it. Pause reasons are tracked separately, so a held overlay and an app going
+to the background never resume each other.
+
+### 10. Custom elements and renderers
 
 ```dart
-import 'package:story_framework/rendering.dart';
+final class ConfettiRenderer extends StoryElementRenderer<CustomElement> {
+  @override
+  String get id => 'confetti';
 
-StoryItemView(
-  document: document,
-  item: document.groups.first.items.first,
-)
+  @override
+  bool supports(StoryElement element) =>
+      element is CustomElement && element.customType == 'confetti';
+
+  @override
+  Widget buildElement(BuildContext context, CustomElement element,
+          StoryRenderContext renderContext) =>
+      Confetti(seed: element.data['seed'] as int? ?? 0);
+}
+
+final renderers = StoryRendererRegistry.withDefaults([ConfettiRenderer()]);
+StoryViewer(document: document, registry: renderers);
 ```
+
+Pass the same registry to the editor and the exporters so a custom element
+looks the same everywhere. See the [rendering guide](doc/RENDERING_SYSTEM.md).
 
 ## Entry points
 
@@ -173,44 +366,40 @@ StoryItemView(
 |---|---|
 | `package:story_framework/story_framework.dart` | Everything public |
 | `package:story_framework/composition.dart` | Documents, elements, serialization, validation (no widgets) |
-| `package:story_framework/media.dart` | Media controller contracts |
+| `package:story_framework/media.dart` | Media contracts, cache, resource loader |
 | `package:story_framework/engine.dart` | Headless playback controller |
 | `package:story_framework/rendering.dart` | Renderers, registry, and item views |
 | `package:story_framework/viewer.dart` | The story viewer, gestures, and overlays |
 | `package:story_framework/animations.dart` | Story transitions |
 | `package:story_framework/editor.dart` | The story editor |
+| `package:story_framework/export.dart` | JSON, PNG, and video export |
 
-The export entry point will be added with its module.
+## Example app
 
-## Roadmap
+[`example/`](example/) has a story tray, the viewer with video and stickers,
+and the editor with a live preview:
 
-| Phase | Scope | Status |
-|---|---|---|
-| 0 | Package foundation, CI, architecture docs | ✅ |
-| 1 | Core domain and composition model | ✅ |
-| 2 | Headless playback engine | ✅ |
-| 3 | Rendering foundation | ✅ |
-| 4 | Story viewer | ✅ |
-| 5 | Advanced viewer customization (gesture and transition registries, overlays) | ✅ |
-| 6 | Media integrations and caching | ✅ |
-| 7 | Interactive content | ✅ |
-| 8–10 | Story editor, tools, timeline, undo/redo | ✅ |
-| 11 | Export pipeline | Planned |
-| 12 | Production readiness | Planned |
+```bash
+cd example
+flutter create . --platforms=android,ios,web
+flutter run
+```
 
 ## Documentation
 
-- [Architecture](doc/ARCHITECTURE.md)
-- [Domain model](doc/DOMAIN_MODEL.md)
-- [Serialization and validation](doc/COMPOSITION_SYSTEM.md)
+- [Architecture](doc/ARCHITECTURE.md) and [API conventions](doc/API_DESIGN.md)
+- [Domain model](doc/DOMAIN_MODEL.md) and
+  [serialization and validation](doc/COMPOSITION_SYSTEM.md)
 - [Playback engine](doc/PLAYBACK_ENGINE.md)
-- [Rendering system](doc/RENDERING_SYSTEM.md)
-- [Viewer system](doc/VIEWER_SYSTEM.md)
-- [Gesture system](doc/GESTURE_SYSTEM.md)
-- [Transition system](doc/TRANSITION_SYSTEM.md)
-- [Overlay system](doc/OVERLAY_SYSTEM.md)
+- [Rendering](doc/RENDERING_SYSTEM.md)
+- [Viewer](doc/VIEWER_SYSTEM.md), [gestures](doc/GESTURE_SYSTEM.md),
+  [transitions](doc/TRANSITION_SYSTEM.md), and [overlays](doc/OVERLAY_SYSTEM.md)
 - [Interactive content](doc/INTERACTIVE_CONTENT.md)
-- [Editor system](doc/EDITOR_SYSTEM.md)
-- [Media system](doc/MEDIA_SYSTEM.md)
-- [API design conventions](doc/API_DESIGN.md)
+- [Media](doc/MEDIA_SYSTEM.md)
+- [Editor](doc/EDITOR_SYSTEM.md)
+- [Export](doc/EXPORT_SYSTEM.md)
 - [Contributing](CONTRIBUTING.md)
+
+## License
+
+See [LICENSE](LICENSE).

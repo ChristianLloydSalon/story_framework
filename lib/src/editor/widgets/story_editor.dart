@@ -287,7 +287,7 @@ class _StoryEditorState extends State<StoryEditor> {
           StoryTimelinePanel(controller: controller, renderers: renderers),
     );
 
-    return DefaultTextStyle(
+    return DefaultTextStyle.merge(
       style: const TextStyle(color: StoryEditorColors.text, fontSize: 13),
       child: CallbackShortcuts(
         bindings: _shortcuts,
