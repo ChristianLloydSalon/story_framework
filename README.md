@@ -1,9 +1,8 @@
 # Story Framework
 
 Instagram-style stories for Flutter: a customizable **viewer**, a full
-**editor**, **interactive stickers**, **video and audio**, and **export**. It is
-built on one shared document model and has **no third-party runtime
-dependencies**.
+**editor**, **interactive stickers**, **video and audio**, and **export**, all
+built on one shared document model.
 
 <table>
   <tr>
