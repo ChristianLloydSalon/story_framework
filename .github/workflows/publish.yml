@@ -1,0 +1,81 @@
+# Publishes to pub.dev when a `v<version>` tag is pushed.
+#
+# Uses pub.dev's automated publishing (GitHub OIDC), so no credentials are
+# stored. pub.dev only accepts runs started by a tag push that matches the
+# package's tag pattern (`v{{version}}`), and only for packages that already
+# exist, so the first version is published by hand.
+name: Publish
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify tag
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        name: Match the tag to pubspec.yaml and pub.dev
+        run: |
+          name=$(sed -n 's/^name:[[:space:]]*//p' pubspec.yaml | tr -d "\"' \r")
+          version=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d "\"' \r")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match pubspec.yaml version $version."
+            exit 1
+          fi
+          status=$(curl -s -o package.json -w '%{http_code}' "https://pub.dev/api/packages/$name")
+          if [ "$status" = 404 ]; then
+            echo "::error::$name is not on pub.dev yet; publish the first version by hand."
+            exit 1
+          fi
+          if [ "$status" != 200 ]; then
+            echo "::error::pub.dev returned HTTP $status."
+            exit 1
+          fi
+          if jq -e --arg v "$version" '.versions[] | select(.version == $v)' package.json > /dev/null; then
+            echo "$name $version is already on pub.dev; skipping."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    name: Checks
+    needs: verify
+    if: needs.verify.outputs.publish == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish to pub.dev
+    needs: [verify, checks]
+    runs-on: ubuntu-latest
+    # Match "Require GitHub Actions environment" on pub.dev's Admin tab.
+    environment: pub.dev
+    permissions:
+      contents: read
+      id-token: write # pub.dev authenticates the run with a GitHub OIDC token.
+    steps:
+      - uses: actions/checkout@v4
+
+      # Exchanges the OIDC token for pub.dev credentials.
+      - uses: dart-lang/setup-dart@v1
+
+      # Flutter packages are published with the Flutter SDK.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Publish
+        run: flutter pub publish --force

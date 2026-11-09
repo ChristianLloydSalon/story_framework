@@ -38,3 +38,7 @@ migrate_working_dir/
 
 # Demo GIFs are shown from GitHub, not shipped in the package.
 /doc/demos/
+
+# Release deploy key pair.
+release_key
+release_key.pub

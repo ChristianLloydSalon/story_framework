@@ -35,3 +35,7 @@ migrate_working_dir/
 
 # Raw screen recordings; the README uses the compressed copies in doc/demos/.
 /doc/recording/
+
+# Release deploy key pair (the private key belongs only in the RELEASE_DEPLOY_KEY secret).
+release_key
+release_key.pub

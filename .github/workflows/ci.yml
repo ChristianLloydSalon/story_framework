@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Release and Publish run these same checks before tagging or publishing.
+  workflow_call:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Includes the calling workflow, so a release run never cancels plain CI.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
