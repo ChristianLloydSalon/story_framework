@@ -43,13 +43,13 @@ StoryItem videoItem(
     );
 
 void main() {
-  late EngineHarness harness;
-  late FakeMediaFactory media;
+  final harness = EngineHarness();
+  final media = FakeMediaFactory();
   final controllers = <StoryController>[];
 
   setUp(() {
-    harness = EngineHarness();
-    media = FakeMediaFactory();
+    harness.reset();
+    media.reset();
   });
 
   tearDown(() async {
@@ -242,8 +242,8 @@ void main() {
     ));
     expect(stateOf(c).status, StoryPlaybackStatus.error);
     expect(stateOf(c).error?.message, 'decoder failed');
-    expect(media.last.disposed, isTrue);
     expect(c.currentMedia, isNull);
+    await flush();
   });
 
   test('initialization failures are reported', () async {

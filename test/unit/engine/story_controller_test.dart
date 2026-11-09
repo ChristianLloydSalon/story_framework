@@ -24,13 +24,13 @@ StoryItemLocation at(int group, int item) =>
     StoryItemLocation(groupIndex: group, itemIndex: item);
 
 void main() {
-  late EngineHarness harness;
-  late List<StoryPlaybackEvent> events;
+  final harness = EngineHarness();
+  final events = <StoryPlaybackEvent>[];
   final controllers = <StoryController>[];
 
   setUp(() {
-    harness = EngineHarness();
-    events = [];
+    harness.reset();
+    events.clear();
   });
 
   tearDown(() async {
@@ -69,7 +69,7 @@ void main() {
         [fixed('a')],
       ]));
       expect(stateOf(c).status, StoryPlaybackStatus.idle);
-      expect(harness.ticker!.isActive, isFalse);
+      expect(harness.ticker.isActive, isFalse);
 
       final statuses = <StoryPlaybackStatus>[];
       c.state.addListener(() => statuses.add(stateOf(c).status));
@@ -78,7 +78,7 @@ void main() {
       expect(
           statuses, [StoryPlaybackStatus.loading, StoryPlaybackStatus.playing]);
       expect(stateOf(c).duration, s * 5);
-      expect(harness.ticker!.isActive, isTrue);
+      expect(harness.ticker.isActive, isTrue);
       expect(events, [StoryItemStartedEvent(at(0, 0))]);
     });
 
@@ -93,7 +93,7 @@ void main() {
       c.play();
       await flush();
       expect(stateOf(c).status, StoryPlaybackStatus.loading);
-      expect(harness.ticker!.isActive, isFalse);
+      expect(harness.ticker.isActive, isFalse);
       pending.complete(s);
       await flush();
       expect(stateOf(c).status, StoryPlaybackStatus.playing);
@@ -228,7 +228,7 @@ void main() {
       c.pause();
       c.addPauseReason(StoryPauseReason.modal);
       expect(stateOf(c).status, StoryPlaybackStatus.paused);
-      expect(harness.ticker!.isActive, isFalse);
+      expect(harness.ticker.isActive, isFalse);
       harness.clock.advance(s * 5);
 
       c.play(); // clears only the user reason
@@ -280,7 +280,7 @@ void main() {
       await flush();
 
       expect(stateOf(c).status, StoryPlaybackStatus.completed);
-      expect(harness.ticker!.isActive, isFalse);
+      expect(harness.ticker.isActive, isFalse);
       expect(events, [
         StoryItemStartedEvent(at(0, 0)),
         StoryItemCompletedEvent(at(0, 0)),
@@ -406,19 +406,19 @@ void main() {
   });
 
   group('navigation', () {
-    late StoryController c;
-
-    setUp(() async {
-      c = create(doc([
+    Future<StoryController> started() async {
+      final c = create(doc([
         [fixed('a'), fixed('b')],
         [fixed('c'), fixed('d')],
         [fixed('e')],
       ]));
       c.play();
       await flush();
-    });
+      return c;
+    }
 
     test('next and previous cross group boundaries', () async {
+      final c = await started();
       c.next();
       expect(c.currentItem?.id, 'b');
       c.next();
@@ -433,6 +433,7 @@ void main() {
     });
 
     test('next on the last item completes playback', () async {
+      final c = await started();
       c.jumpToItem('e');
       c.next();
       expect(stateOf(c).status, StoryPlaybackStatus.completed);
@@ -440,7 +441,8 @@ void main() {
       expect(stateOf(c).status, StoryPlaybackStatus.completed);
     });
 
-    test('group navigation', () {
+    test('group navigation', () async {
+      final c = await started();
       c.next();
       c.nextGroup();
       expect(c.currentItem?.id, 'c');
@@ -455,7 +457,8 @@ void main() {
       expect(c.currentItem?.id, 'a', reason: 'restarts the first group');
     });
 
-    test('jumps by location and id', () {
+    test('jumps by location and id', () async {
+      final c = await started();
       c.jumpTo(at(1, 1));
       expect(c.currentItem?.id, 'd');
       c.jumpToItem('b');
@@ -465,6 +468,7 @@ void main() {
     });
 
     test('rapid navigation settles on the last target', () async {
+      final c = await started();
       for (var i = 0; i < 20; i++) {
         c.next();
         c.previous();
@@ -477,6 +481,7 @@ void main() {
     });
 
     test('previous after completion re-enters playback', () async {
+      final c = await started();
       c.jumpToItem('e');
       c.next();
       c.previous();
@@ -559,7 +564,7 @@ void main() {
       expect(stateOf(c).status, StoryPlaybackStatus.error);
       expect(stateOf(c).error, isA<ConfigurationException>());
       expect(events.last, isA<StoryPlaybackErrorEvent>());
-      expect(harness.ticker!.isActive, isFalse);
+      expect(harness.ticker.isActive, isFalse);
     });
 
     test('play retries after an error', () async {
@@ -650,7 +655,7 @@ void main() {
       await flush();
       await c.dispose();
       expect(c.isDisposed, isTrue);
-      expect(harness.ticker!.disposed, isTrue);
+      expect(harness.ticker.disposed, isTrue);
       expect(c.play, throwsA(isA<ControllerDisposedException>()));
       expect(() => c.seekTo(s), throwsA(isA<ControllerDisposedException>()));
       await c.dispose(); // idempotent

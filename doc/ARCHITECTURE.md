@@ -13,7 +13,7 @@ a small number of public entry points.
 | Media | `lib/src/media/` | Contracts only | Media controller contracts; integrations come in Phase 6 |
 | Engine | `lib/src/engine/` | ✅ | Headless playback controller, timeline, navigation, lifecycle |
 | Configuration | `lib/src/configuration/` | Playback only | Immutable configuration objects |
-| Rendering | `lib/src/viewer/rendering/` | Planned (Phase 3) | Renderer contract and registry |
+| Rendering | `lib/src/rendering/` | ✅ | Renderer contract, registry, built-in renderers, item views |
 | Viewer | `lib/src/viewer/` | Planned (Phase 4–5) | Default viewer UI, progress, overlays |
 | Gestures | `lib/src/gestures/` | Planned (Phase 5) | Gesture registry and handlers |
 | Animations | `lib/src/animations/` | Planned (Phase 5) | Transition registry and presets |
@@ -48,9 +48,12 @@ exist):
 4. `editor` must not import `viewer` or `engine`.
 5. `viewer` and `editor` share the composition model and rendering contracts.
 6. `export` must not import `viewer`.
-7. Media integrations implement `media` contracts; the engine never imports a
+7. `rendering` imports `core`, `composition`, and Flutter widgets. It must not
+   import `engine`, `viewer`, or `editor`, so the editor and exporter can use it
+   without playback.
+8. Media integrations implement `media` contracts; the engine never imports a
    concrete media package.
-8. No circular imports between modules.
+9. No circular imports between modules.
 
 ## Public and internal API
 
@@ -64,6 +67,7 @@ exist):
   | `composition.dart` | `core` + `composition` |
   | `media.dart` | `composition.dart` + media contracts |
   | `engine.dart` | `media.dart` + playback controller, config, clock, events, lifecycle |
+  | `rendering.dart` | `composition.dart` + renderers, registry, image resolver, item views |
 
 - Helpers needed only inside the package (for example `JsonReader`,
   `freezeJsonMap`) are not exported.

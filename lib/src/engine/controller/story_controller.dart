@@ -82,7 +82,7 @@ class StoryController {
     _location = initialLocation ?? _firstLocation();
     _anchorTime = _clock.elapsed;
     _ticker = (tickerFactory ?? TimerStoryTicker.new)(_onTick);
-    _state = ValueNotifier(_snapshot());
+    _state.value = _snapshot();
   }
 
   /// Playback behavior.
@@ -92,8 +92,10 @@ class StoryController {
   final StoryClock _clock;
   final List<StoryMediaControllerFactory> _mediaFactories;
   final Map<String, StoryDurationProvider> _durationProviders;
-  late final StoryTicker _ticker;
-  late final ValueNotifier<StoryPlaybackState> _state;
+  // Assigned once in the constructor body, which can reference `_onTick`.
+  StoryTicker? _ticker;
+  final ValueNotifier<StoryPlaybackState> _state =
+      ValueNotifier(StoryPlaybackState.initial());
   final StreamController<StoryPlaybackEvent> _events =
       StreamController.broadcast();
 
@@ -111,7 +113,7 @@ class StoryController {
   // Timeline: position = anchorPosition + (now - anchorTime) * speed while
   // the timeline runs.
   Duration _anchorPosition = Duration.zero;
-  late Duration _anchorTime;
+  Duration _anchorTime = Duration.zero;
   bool _timelineRunning = false;
 
   // Incremented whenever the current item changes; async work captured with an
@@ -335,7 +337,7 @@ class StoryController {
     if (_disposed) return;
     _disposed = true;
     _generation++;
-    _ticker.dispose();
+    _ticker?.dispose();
     _teardownMedia();
     _state.dispose();
     unawaited(_events.close());
@@ -365,6 +367,8 @@ class StoryController {
     final generation = ++_generation;
     _teardownMedia();
     _setTimelineRunning(false);
+    final item = _document.itemAt(location);
+    if (item == null) return;
     _location = location;
     _phase = _Phase.loading;
     _duration = null;
@@ -376,7 +380,7 @@ class StoryController {
     _clearBuffering();
     _emit();
     _addEvent(StoryItemStartedEvent(location));
-    unawaited(_prepare(generation, _document.itemAt(location)!));
+    unawaited(_prepare(generation, item));
   }
 
   Future<void> _prepare(int generation, StoryItem item) async {
@@ -505,7 +509,8 @@ class StoryController {
   void _completeItem() {
     _setTimelineRunning(false);
     _anchorPosition = _duration ?? _anchorPosition;
-    final location = _location!;
+    final location = _location;
+    if (location == null) return;
     _addEvent(StoryItemCompletedEvent(location));
     final autoAdvance = currentItem?.playback.autoAdvance ?? config.autoAdvance;
     if (autoAdvance) {
@@ -517,7 +522,8 @@ class StoryController {
   }
 
   void _advance({required bool automatic}) {
-    final location = _location!;
+    final location = _location;
+    if (location == null) return;
     final next = _nextLocation(location);
     final leavesGroup = next == null || next.groupIndex != location.groupIndex;
     if (automatic && leavesGroup) {
@@ -598,9 +604,9 @@ class StoryController {
     _reanchor();
     _timelineRunning = running;
     if (running) {
-      _ticker.start();
+      _ticker?.start();
     } else {
-      _ticker.stop();
+      _ticker?.stop();
     }
   }
 
@@ -708,15 +714,17 @@ class StoryController {
     _mediaElement = null;
     _mediaPlaying = false;
     if (media == null) return;
-    late final Future<void> disposal;
-    disposal = _disposeMedia(media).whenComplete(
-      () => _pendingDisposals.remove(disposal),
-    );
+    final disposal = _disposeMedia(media);
     _pendingDisposals.add(disposal);
+    unawaited(disposal.whenComplete(() => _pendingDisposals.remove(disposal)));
   }
 
+  /// Disposal is deferred to a microtask: teardown often happens inside the
+  /// media's own snapshot callback (completion, errors), and disposing a
+  /// controller from within its own event dispatch is unsafe.
   static Future<void> _disposeMedia(StoryMediaController media) async {
     try {
+      await Future<void>.microtask(() {});
       await media.dispose();
     } catch (error, stack) {
       FlutterError.reportError(FlutterErrorDetails(

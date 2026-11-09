@@ -44,7 +44,7 @@ Object? _freeze(Object? value) {
     List<Object?>() => List<Object?>.unmodifiable(value.map(_freeze)),
     Map<Object?, Object?>() => Map<String, Object?>.unmodifiable({
         for (final entry in value.entries)
-          entry.key! as String: _freeze(entry.value),
+          entry.key as String: _freeze(entry.value),
       }),
     _ => value,
   };

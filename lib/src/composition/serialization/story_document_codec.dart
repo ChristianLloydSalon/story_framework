@@ -162,8 +162,8 @@ final class _Encoder {
           for (final (i, group) in doc.groups.indexed)
             this.group(group, 'groups[$i]'),
         ],
-        if (doc.createdAt != null) 'createdAt': _date(doc.createdAt!),
-        if (doc.updatedAt != null) 'updatedAt': _date(doc.updatedAt!),
+        if (doc.createdAt case final createdAt?) 'createdAt': _date(createdAt),
+        if (doc.updatedAt case final updatedAt?) 'updatedAt': _date(updatedAt),
         ..._annotations(doc.metadata, doc.customData),
       };
 
@@ -191,17 +191,21 @@ final class _Encoder {
           for (final (i, item) in group.items.indexed)
             this.item(item, '$path.items[$i]'),
         ],
-        if (group.createdAt != null) 'createdAt': _date(group.createdAt!),
-        if (group.expiresAt != null) 'expiresAt': _date(group.expiresAt!),
+        if (group.createdAt case final createdAt?)
+          'createdAt': _date(createdAt),
+        if (group.expiresAt case final expiresAt?)
+          'expiresAt': _date(expiresAt),
         ..._annotations(group.metadata, group.customData),
       };
 
   JsonMap item(StoryItem item, String path) => {
         'id': item.id,
-        if (item.background != null)
-          'background': background(item.background!, '$path.background'),
-        if (item.duration != null) 'duration': duration(item.duration!),
-        if (item.transition != null) 'transition': transition(item.transition!),
+        if (item.background case final itemBackground?)
+          'background': background(itemBackground, '$path.background'),
+        if (item.duration case final itemDuration?)
+          'duration': duration(itemDuration),
+        if (item.transition case final itemTransition?)
+          'transition': transition(itemTransition),
         if (!item.playback.isInherited)
           'playback': {
             if (item.playback.autoAdvance != null)
@@ -276,8 +280,8 @@ final class _Encoder {
           'text': element.text,
           'style': _textStyle(element.style),
           'align': element.align.name,
-          if (element.backgroundColor != null)
-            'backgroundColor': element.backgroundColor!.toHex(),
+          if (element.backgroundColor case final backgroundColor?)
+            'backgroundColor': backgroundColor.toHex(),
           if (element.padding != StoryInsets.zero)
             'padding': _insets(element.padding),
         },
@@ -286,9 +290,9 @@ final class _Encoder {
         },
       ShapeElement() => {
           'shape': element.shape.name,
-          if (element.fillColor != null)
-            'fillColor': element.fillColor!.toHex(),
-          if (element.stroke != null) 'stroke': _stroke(element.stroke!),
+          if (element.fillColor case final fillColor?)
+            'fillColor': fillColor.toHex(),
+          if (element.stroke case final stroke?) 'stroke': _stroke(stroke),
           if (element.cornerRadius != 0) 'cornerRadius': element.cornerRadius,
         },
       DrawingElement() => {
@@ -317,8 +321,8 @@ final class _Encoder {
         'loop': element.loop,
         if (element.trimStart != Duration.zero)
           'trimStartMs': element.trimStart.inMilliseconds,
-        if (element.trimEnd != null)
-          'trimEndMs': element.trimEnd!.inMilliseconds,
+        if (element.trimEnd case final trimEnd?)
+          'trimEndMs': trimEnd.inMilliseconds,
       };
 
   JsonMap background(StoryBackground background, String path) =>
@@ -405,7 +409,7 @@ final class _Encoder {
                 'blurRadius': shadow.blurRadius,
               },
           ],
-        if (style.stroke != null) 'stroke': _stroke(style.stroke!),
+        if (style.stroke case final stroke?) 'stroke': _stroke(stroke),
       };
 
   /// Points are stored as a flat `[x0, y0, x1, y1, ...]` list to keep

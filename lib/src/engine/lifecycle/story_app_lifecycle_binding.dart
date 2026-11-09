@@ -29,10 +29,11 @@ final class StoryAppLifecycleBinding {
       AppLifecycleState.paused,
       AppLifecycleState.detached,
     },
-  }) {
-    _listener = AppLifecycleListener(onStateChange: _apply);
+  }) : _listener = AppLifecycleListener(
+          onStateChange: (state) => _apply(controller, pauseIn, state),
+        ) {
     final current = WidgetsBinding.instance.lifecycleState;
-    if (current != null) _apply(current);
+    if (current != null) _apply(controller, pauseIn, current);
   }
 
   /// The controller being held and released.
@@ -41,9 +42,13 @@ final class StoryAppLifecycleBinding {
   /// Lifecycle states that hold playback.
   final Set<AppLifecycleState> pauseIn;
 
-  late final AppLifecycleListener _listener;
+  final AppLifecycleListener _listener;
 
-  void _apply(AppLifecycleState state) {
+  static void _apply(
+    StoryController controller,
+    Set<AppLifecycleState> pauseIn,
+    AppLifecycleState state,
+  ) {
     if (controller.isDisposed) return;
     if (pauseIn.contains(state)) {
       controller.addPauseReason(StoryPauseReason.appBackground);

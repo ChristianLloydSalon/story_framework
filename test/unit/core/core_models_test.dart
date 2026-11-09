@@ -91,10 +91,10 @@ void main() {
       source['list'] = 'mutated';
       expect(element.data['list'], [1, 2]);
       expect(() => element.data['x'] = 1, throwsUnsupportedError);
-      expect(() => (element.data['list']! as List<Object?>).add(3),
+      expect(() => (element.data['list'] as List<Object?>).add(3),
           throwsUnsupportedError);
       expect(
-        () => (element.data['map']! as Map<String, Object?>)['k'] = 'w',
+        () => (element.data['map'] as Map<String, Object?>)['k'] = 'w',
         throwsUnsupportedError,
       );
     });

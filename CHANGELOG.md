@@ -1,5 +1,19 @@
 ## Unreleased
 
+- Rendering foundation: `StoryElementRenderer` contract, `StoryRenderContext`,
+  and `StoryRendererRegistry` (duplicate checks, explicit replacement,
+  ownership-aware unregistering, change notification).
+- `StoryItemView` renders an item on a scaled canvas with element transforms,
+  opacity, z-order, and semantics labels.
+- Built-in renderers for image, text (with outline stroke), sticker, shape,
+  drawing, and audio elements, plus `StoryWidgetElementRenderer` and
+  `StoryCustomElementRenderer` for app content.
+- `StoryRenderOptions` with loading, error, and unsupported builders, error
+  reporting, and text scaling.
+- `DefaultStoryImageResolver` with HTTP headers and custom source resolvers;
+  web-safe file image loading.
+- The engine now defers media disposal to a microtask, so it never disposes a
+  media controller from inside that controller's own event callback.
 - Headless playback engine: `StoryController` with a clock-derived (drift-free)
   timeline, navigation across items and groups, seeking, playback speed,
   independent pause reasons, auto-advance, looping, and completion handling.

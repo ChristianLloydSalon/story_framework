@@ -6,8 +6,9 @@ Snapchat, or WhatsApp Status — with no forced UI, backend, media provider, or
 state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
-> serialization, validation, and the headless playback engine are
-> implemented. The viewer, editor, and export pipeline are planned; see
+> serialization, validation, the headless playback engine, and the rendering
+> foundation are implemented. The viewer, editor, and export pipeline are
+> planned; see
 > [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
@@ -25,6 +26,9 @@ state-management library.
 - **Headless playback engine** (`StoryController`): drift-free timeline,
   navigation, independent pause reasons, speed, seeking, media-driven
   durations, lifecycle handling, and safe cancellation on rapid navigation.
+- **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
+  using a pluggable renderer registry. Built-in renderers cover images, text,
+  stickers, shapes, and drawings, with app-defined widget and custom elements.
 
 ## Install
 
@@ -94,6 +98,17 @@ controller.play();
 await controller.dispose();
 ```
 
+### Rendering an item
+
+```dart
+import 'package:story_framework/rendering.dart';
+
+StoryItemView(
+  document: document,
+  item: document.groups.first.items.first,
+)
+```
+
 ## Entry points
 
 | Import | Contents |
@@ -102,6 +117,7 @@ await controller.dispose();
 | `package:story_framework/composition.dart` | Documents, elements, serialization, validation (no widgets) |
 | `package:story_framework/media.dart` | Media controller contracts |
 | `package:story_framework/engine.dart` | Headless playback controller |
+| `package:story_framework/rendering.dart` | Renderers, registry, and item views |
 
 Viewer, editor, animation, and export entry points will be added with their
 modules.
@@ -113,7 +129,7 @@ modules.
 | 0 | Package foundation, CI, architecture docs | ✅ |
 | 1 | Core domain and composition model | ✅ |
 | 2 | Headless playback engine | ✅ |
-| 3 | Rendering foundation | Planned |
+| 3 | Rendering foundation | ✅ |
 | 4–5 | Story viewer and customization | Planned |
 | 6 | Media integrations and caching | Planned |
 | 7 | Interactive content | Planned |
@@ -127,5 +143,6 @@ modules.
 - [Domain model](doc/DOMAIN_MODEL.md)
 - [Serialization and validation](doc/COMPOSITION_SYSTEM.md)
 - [Playback engine](doc/PLAYBACK_ENGINE.md)
+- [Rendering system](doc/RENDERING_SYSTEM.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

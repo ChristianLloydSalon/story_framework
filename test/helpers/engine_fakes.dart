@@ -41,17 +41,29 @@ final class ManualTicker implements StoryTicker {
 }
 
 /// Bundles a fake clock with the manual ticker the controller creates.
+///
+/// Create one per test file and call [reset] in `setUp`.
 final class EngineHarness {
-  final FakeClock clock = FakeClock();
-  ManualTicker? ticker;
+  FakeClock clock = FakeClock();
+  ManualTicker? _ticker;
+
+  /// The ticker created by the most recent controller.
+  ManualTicker get ticker =>
+      _ticker ?? (throw StateError('No controller has created a ticker'));
 
   StoryTicker createTicker(void Function() onTick) =>
-      ticker = ManualTicker(onTick);
+      _ticker = ManualTicker(onTick);
+
+  /// Forgets the previous clock and ticker.
+  void reset() {
+    clock = FakeClock();
+    _ticker = null;
+  }
 
   /// Advances time by [delta] and fires one tick.
   void advance(Duration delta) {
     clock.advance(delta);
-    ticker!.tick();
+    ticker.tick();
   }
 
   /// Advances in [step]s until [total] has elapsed, ticking after each step.
@@ -145,6 +157,12 @@ final class FakeMediaFactory implements StoryMediaControllerFactory {
 
   /// Called on each new controller before it is returned.
   void Function(FakeMediaController controller)? onCreate;
+
+  /// Forgets created controllers and the [onCreate] hook.
+  void reset() {
+    created.clear();
+    onCreate = null;
+  }
 
   FakeMediaController get last => created.last;
 

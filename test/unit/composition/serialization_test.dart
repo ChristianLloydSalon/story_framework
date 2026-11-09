@@ -9,6 +9,13 @@ Matcher throwsSerializationAt(String path) => throwsA(
       isA<SerializationException>().having((e) => e.path, 'path', path),
     );
 
+/// The elements of the first item of the first group in encoded [json].
+List<Object?> firstElements(JsonMap json) {
+  final group = (json['groups'] as List<Object?>).first as JsonMap;
+  final item = (group['items'] as List<Object?>).first as JsonMap;
+  return item['elements'] as List<Object?>;
+}
+
 JsonMap minimalJson({List<Object?> elements = const []}) => {
       'schemaVersion': 1,
       'id': 'd',
@@ -50,13 +57,11 @@ void main() {
 
     test('drawing points are stored as a flat list', () {
       final json = codec.encode(sampleDocument());
-      final elements = ((((json['groups']! as List<Object?>).first!
-              as JsonMap)['items']! as List<Object?>)
-          .first! as JsonMap)['elements']! as List<Object?>;
+      final elements = firstElements(json);
       final drawing = elements
           .cast<JsonMap>()
           .firstWhere((element) => element['type'] == 'drawing');
-      final stroke = (drawing['strokes']! as List<Object?>).first! as JsonMap;
+      final stroke = (drawing['strokes'] as List<Object?>).first as JsonMap;
       expect(stroke['points'], [0.0, 0.0, 10.5, 20.0]);
     });
 
@@ -108,10 +113,7 @@ void main() {
       expect(element.rawJson['animation'], {'src': 'a.json', 'speed': 2});
 
       final reencoded = codec.encode(document);
-      final elementJson = ((((reencoded['groups']! as List<Object?>).single!
-              as JsonMap)['items']! as List<Object?>)
-          .single! as JsonMap)['elements']! as List<Object?>;
-      final json = elementJson.single! as JsonMap;
+      final json = firstElements(reencoded).single as JsonMap;
       expect(json['type'], 'lottie');
       expect(json['animation'], {'src': 'a.json', 'speed': 2});
     });
