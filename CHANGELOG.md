@@ -15,6 +15,8 @@
   `StoryEditorTool.icon`), hover and press states, labeled steppers
   (`StoryEditorStepper`), button groups, `StoryEditorPanel`, and a toolbar
   that keeps undo and redo visible on phones.
+- `createStoryHttpFetcher` now works on the web, using the browser's
+  `fetch` (with headers and abort on cancel) and no extra dependency.
 - Fixed: Backspace, Delete, arrows, and Ctrl/Cmd shortcuts were swallowed
   by editor shortcuts while editing text, and the inline text field did not
   receive focus.

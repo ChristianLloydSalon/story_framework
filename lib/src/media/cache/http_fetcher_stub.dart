@@ -1,8 +1,8 @@
 import '../../core/errors/story_exceptions.dart';
 import 'story_resource_loader.dart';
 
-/// Without `dart:io` (on the web) there is no built-in fetcher; the browser's
-/// own HTTP cache applies. Supply a fetcher to `StoryResourceLoader` instead.
+/// Used only on platforms with neither `dart:io` nor JavaScript interop.
+/// Supply a fetcher to `StoryResourceLoader` there instead.
 StoryByteFetcher createStoryHttpFetcher({
   Map<String, String>? Function(Uri url)? headersFor,
 }) =>

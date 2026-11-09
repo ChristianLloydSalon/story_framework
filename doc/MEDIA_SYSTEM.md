@@ -111,5 +111,5 @@ StoryViewer(
 | `StoryCacheProvider` | Contract for your own cache (for example disk via `flutter_cache_manager`) |
 | `StoryResourceLoader` | Cache first; concurrent loads of a key share one fetch; failures are not cached; at most `maxConcurrentFetches` fetches at once |
 | `StoryCancellationToken` | A cancelled caller stops waiting at once; the fetch itself is aborted when no caller is left |
-| `createStoryHttpFetcher` | `dart:io` HTTP fetcher with headers and abort on cancel (on the web, supply your own; the browser cache applies) |
+| `createStoryHttpFetcher` | HTTP fetcher with headers and abort on cancel: `dart:io` on mobile and desktop, the browser's `fetch` on the web (servers must allow CORS) |
 | `StoryCachedImageProvider` | An `ImageProvider` that loads through the loader |

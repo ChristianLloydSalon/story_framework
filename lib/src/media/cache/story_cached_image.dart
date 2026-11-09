@@ -6,7 +6,9 @@ import 'package:flutter/painting.dart';
 
 import 'story_resource_loader.dart';
 
-export 'http_fetcher_stub.dart' if (dart.library.io) 'http_fetcher_io.dart';
+export 'http_fetcher_stub.dart'
+    if (dart.library.io) 'http_fetcher_io.dart'
+    if (dart.library.js_interop) 'http_fetcher_web.dart';
 
 /// An image loaded through a [StoryResourceLoader], so its encoded bytes are
 /// cached (surviving `ImageCache` eviction) and concurrent loads of the same
