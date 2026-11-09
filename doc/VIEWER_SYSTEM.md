@@ -67,8 +67,14 @@ headerBuilder: (context, controller) => StoryPlaybackSelector<int>(
 Tap zones and arrow keys mirror in right-to-left locales. Drags hold playback
 with `StoryPauseReason.navigationOverlay` while the finger is down. Screen
 readers get "Previous story", "Next story", and "Close" buttons, so no action
-depends only on gestures. A registry-based gesture system with priorities and
-conflict resolution comes with advanced viewer customization.
+depends only on gestures.
+
+The touch gestures are handlers in a `StoryGestureRegistry`. Pass
+`gestureRegistry` to add, replace, or disable them (see
+[GESTURE_SYSTEM.md](GESTURE_SYSTEM.md)). Transitions between items and groups
+come from `transitionRegistry` and the config (see
+[TRANSITION_SYSTEM.md](TRANSITION_SYSTEM.md)), and app layers go in
+`overlays` (see [OVERLAY_SYSTEM.md](OVERLAY_SYSTEM.md)).
 
 ## Performance
 

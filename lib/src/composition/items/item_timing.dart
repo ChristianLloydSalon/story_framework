@@ -114,6 +114,13 @@ final class StoryTransitionConfiguration {
     JsonMap parameters = const {},
   }) : parameters = freezeJsonMap(parameters, name: 'parameters');
 
+  /// A constant configuration without parameters, usable as a default value.
+  const StoryTransitionConfiguration.preset(
+    this.type, {
+    this.duration = const Duration(milliseconds: 300),
+    this.curve = 'easeInOut',
+  }) : parameters = const {};
+
   /// Registered transition identifier.
   final String type;
 

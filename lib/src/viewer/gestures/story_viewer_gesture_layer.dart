@@ -1,43 +1,49 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../configuration/viewer/story_viewer_config.dart';
 import '../../core/enums/story_enums.dart';
 import '../../engine/controller/story_controller.dart';
+import '../../gestures/story_gesture_event.dart';
+import '../../gestures/story_gesture_handler.dart';
+import '../../gestures/story_gesture_registry.dart';
 
-/// The viewer's default interactions, translated into controller commands.
+/// Recognizes gestures over the story content and dispatches them to the
+/// handlers in [registry].
 ///
-/// | Input | Action |
-/// |---|---|
-/// | Tap the leading part (see `previousTapFraction`) | `previous()` |
-/// | Tap elsewhere | `next()` |
-/// | Press and hold | Pause until release |
-/// | Swipe toward the leading/trailing edge | Next/previous group |
-/// | Drag down past `dismissDistance` | [onDismiss] |
-/// | Arrow keys, space, escape | Navigate, pause/resume, dismiss |
+/// Only recognizers requested by enabled handlers are installed (see
+/// [StoryGestureKind]). Widgets stacked above this layer, such as interactive
+/// overlays, receive pointer events first, so they consume their own gestures
+/// without triggering navigation.
 ///
 /// Every gesture also has a non-gesture alternative: screen readers get
-/// "Previous story" and "Next story" buttons, and keyboards get shortcuts.
-///
-/// Drags hold playback with [StoryPauseReason.navigationOverlay] while the
-/// finger is down.
+/// "Previous story" and "Next story" buttons, and, when [keyboardShortcuts]
+/// is on, arrow keys navigate (mirrored in right-to-left layouts), space
+/// pauses or resumes, and escape dismisses.
 class StoryViewerGestureLayer extends StatefulWidget {
-  /// Creates the gesture layer for [controller].
+  /// Creates the gesture layer.
   const StoryViewerGestureLayer({
     required this.controller,
-    this.config = const StoryViewerConfig(),
+    required this.registry,
     this.onDismiss,
+    this.keyboardShortcuts = true,
+    this.previousButtonFraction = 0.3,
     super.key,
   });
 
   /// The controller to command.
   final StoryController controller;
 
-  /// Which interactions are enabled.
-  final StoryViewerConfig config;
+  /// The handlers that receive gestures.
+  final StoryGestureRegistry registry;
 
-  /// Called when the user dismisses the viewer, if dismissing is allowed.
+  /// Dismisses the viewer, or `null` if it cannot be dismissed.
   final VoidCallback? onDismiss;
+
+  /// Whether keyboard shortcuts are active.
+  final bool keyboardShortcuts;
+
+  /// Width share of the screen-reader "Previous story" button.
+  final double previousButtonFraction;
 
   @override
   State<StoryViewerGestureLayer> createState() =>
@@ -45,80 +51,106 @@ class StoryViewerGestureLayer extends StatefulWidget {
 }
 
 class _StoryViewerGestureLayerState extends State<StoryViewerGestureLayer> {
-  static const double _flingVelocity = 300;
-  double _dragDistance = 0;
+  /// The handler that owns the current long press or drag, if any.
+  StoryGestureHandler? _owner;
+  StoryDragAxis? _dragAxis;
+  double _dragOffset = 0;
+  Offset _doubleTapPosition = Offset.zero;
 
   StoryController get _controller => widget.controller;
 
-  bool get _usable => !_controller.isDisposed;
+  @override
+  void initState() {
+    super.initState();
+    widget.registry.addListener(_onRegistryChanged);
+  }
 
-  void _tap(TapUpDetails details) {
-    if (!_usable) return;
-    final width = context.size?.width ?? 0;
-    if (width <= 0) return;
-    final rtl = Directionality.maybeOf(context) == TextDirection.rtl;
-    final fromLeading =
-        rtl ? width - details.localPosition.dx : details.localPosition.dx;
-    if (fromLeading < width * widget.config.previousTapFraction) {
-      _controller.previous();
-    } else {
-      _controller.next();
+  @override
+  void didUpdateWidget(StoryViewerGestureLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.registry != widget.registry) {
+      oldWidget.registry.removeListener(_onRegistryChanged);
+      widget.registry.addListener(_onRegistryChanged);
+      _cancelOwner();
     }
+    if (oldWidget.controller != widget.controller) _cancelOwner();
   }
 
-  void _holdStart(LongPressStartDetails details) {
-    if (_usable) _controller.pause();
+  @override
+  void dispose() {
+    widget.registry.removeListener(_onRegistryChanged);
+    _cancelOwner();
+    super.dispose();
   }
 
-  void _holdEnd(LongPressEndDetails details) {
-    if (_usable) _controller.play();
+  void _onRegistryChanged() {
+    final owner = _owner;
+    if (owner != null && !widget.registry.isEnabled(owner.id)) _cancelOwner();
+    setState(() {});
   }
 
-  void _dragStart(DragStartDetails details) {
-    _dragDistance = 0;
-    if (_usable) {
-      _controller.addPauseReason(StoryPauseReason.navigationOverlay);
-    }
+  StoryGestureContext _contextFor(StoryGestureEvent event) =>
+      StoryGestureContext(
+        event: event,
+        controller: _controller,
+        size: context.size ?? Size.zero,
+        textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+        onDismiss: widget.onDismiss,
+      );
+
+  bool get _usable => mounted && !_controller.isDisposed;
+
+  void _dispatch(StoryGestureEvent event) {
+    if (_usable) widget.registry.dispatch(_contextFor(event));
   }
 
-  void _verticalUpdate(DragUpdateDetails details) {
-    _dragDistance += details.delta.dy;
+  void _start(StoryGestureEvent event) {
+    _cancelOwner();
+    if (_usable) _owner = widget.registry.dispatch(_contextFor(event));
   }
 
-  void _releaseDrag() {
-    if (_usable) {
-      _controller.removePauseReason(StoryPauseReason.navigationOverlay);
-    }
+  void _continue(StoryGestureEvent event) {
+    final owner = _owner;
+    if (owner != null && _usable) owner.handle(_contextFor(event));
   }
 
-  void _verticalEnd(DragEndDetails details) {
-    _releaseDrag();
-    final dismiss = widget.onDismiss;
-    final velocity = details.primaryVelocity ?? 0;
-    if (dismiss != null &&
-        (_dragDistance >= widget.config.dismissDistance ||
-            velocity > _flingVelocity * 2)) {
-      dismiss();
-    }
+  void _finish(StoryGestureEvent event) {
+    _continue(event);
+    _owner = null;
+    _dragAxis = null;
   }
 
-  void _horizontalUpdate(DragUpdateDetails details) {
-    _dragDistance += details.delta.dx;
+  void _cancelOwner() {
+    final owner = _owner;
+    final axis = _dragAxis;
+    _owner = null;
+    _dragAxis = null;
+    if (owner == null || _controller.isDisposed) return;
+    owner.cancel(StoryGestureContext(
+      event: axis == null
+          ? const StoryLongPressEndEvent(Offset.zero)
+          : StoryDragEndEvent(axis, offset: _dragOffset, velocity: 0),
+      controller: _controller,
+      size: Size.zero,
+      onDismiss: widget.onDismiss,
+    ));
   }
 
-  void _horizontalEnd(DragEndDetails details) {
-    _releaseDrag();
-    if (!_usable) return;
-    final velocity = details.primaryVelocity ?? 0;
-    final rtl = Directionality.maybeOf(context) == TextDirection.rtl;
-    // Positive values move toward the trailing edge in reading direction.
-    final towardTrailing = rtl ? -_dragDistance : _dragDistance;
-    final flingTowardTrailing = rtl ? -velocity : velocity;
-    if (towardTrailing < -48 || flingTowardTrailing < -_flingVelocity) {
-      _controller.nextGroup();
-    } else if (towardTrailing > 48 || flingTowardTrailing > _flingVelocity) {
-      _controller.previousGroup();
-    }
+  void _dragStart(StoryDragAxis axis, DragStartDetails details) {
+    _dragAxis = axis;
+    _dragOffset = 0;
+    _start(StoryDragStartEvent(axis, details.localPosition));
+  }
+
+  void _dragUpdate(StoryDragAxis axis, DragUpdateDetails details) {
+    final delta = details.primaryDelta ?? 0;
+    _dragOffset += delta;
+    _continue(StoryDragUpdateEvent(axis, delta: delta, offset: _dragOffset));
+  }
+
+  void _dragEnd(StoryDragAxis axis, DragEndDetails details) {
+    _finish(StoryDragEndEvent(axis,
+        offset: _dragOffset, velocity: details.primaryVelocity ?? 0));
   }
 
   void _togglePause() {
@@ -140,25 +172,50 @@ class _StoryViewerGestureLayerState extends State<StoryViewerGestureLayer> {
 
   @override
   Widget build(BuildContext context) {
-    final config = widget.config;
-    final dismiss = widget.onDismiss;
-    final canDismiss = dismiss != null && config.swipeDownToDismiss;
-    final previousFlex = (config.previousTapFraction * 100).round();
+    final kinds = widget.registry.activeKinds;
+    bool wants(StoryGestureKind kind) => kinds.contains(kind);
+    final previousFlex =
+        (widget.previousButtonFraction.clamp(0.05, 0.95) * 100).round();
 
     Widget layer = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapUp: _tap,
-      onLongPressStart: config.longPressToPause ? _holdStart : null,
-      onLongPressEnd: config.longPressToPause ? _holdEnd : null,
-      onVerticalDragStart: canDismiss ? _dragStart : null,
-      onVerticalDragUpdate: canDismiss ? _verticalUpdate : null,
-      onVerticalDragEnd: canDismiss ? _verticalEnd : null,
-      onVerticalDragCancel: canDismiss ? _releaseDrag : null,
-      onHorizontalDragStart: config.swipeBetweenGroups ? _dragStart : null,
-      onHorizontalDragUpdate:
-          config.swipeBetweenGroups ? _horizontalUpdate : null,
-      onHorizontalDragEnd: config.swipeBetweenGroups ? _horizontalEnd : null,
-      onHorizontalDragCancel: config.swipeBetweenGroups ? _releaseDrag : null,
+      onTapUp: wants(StoryGestureKind.tap)
+          ? (details) => _dispatch(StoryTapEvent(details.localPosition))
+          : null,
+      onDoubleTapDown: wants(StoryGestureKind.doubleTap)
+          ? (details) => _doubleTapPosition = details.localPosition
+          : null,
+      onDoubleTap: wants(StoryGestureKind.doubleTap)
+          ? () => _dispatch(StoryDoubleTapEvent(_doubleTapPosition))
+          : null,
+      onLongPressStart: wants(StoryGestureKind.longPress)
+          ? (details) => _start(StoryLongPressStartEvent(details.localPosition))
+          : null,
+      onLongPressEnd: wants(StoryGestureKind.longPress)
+          ? (details) => _finish(StoryLongPressEndEvent(details.localPosition))
+          : null,
+      onHorizontalDragStart: wants(StoryGestureKind.horizontalDrag)
+          ? (details) => _dragStart(StoryDragAxis.horizontal, details)
+          : null,
+      onHorizontalDragUpdate: wants(StoryGestureKind.horizontalDrag)
+          ? (details) => _dragUpdate(StoryDragAxis.horizontal, details)
+          : null,
+      onHorizontalDragEnd: wants(StoryGestureKind.horizontalDrag)
+          ? (details) => _dragEnd(StoryDragAxis.horizontal, details)
+          : null,
+      onHorizontalDragCancel:
+          wants(StoryGestureKind.horizontalDrag) ? _cancelOwner : null,
+      onVerticalDragStart: wants(StoryGestureKind.verticalDrag)
+          ? (details) => _dragStart(StoryDragAxis.vertical, details)
+          : null,
+      onVerticalDragUpdate: wants(StoryGestureKind.verticalDrag)
+          ? (details) => _dragUpdate(StoryDragAxis.vertical, details)
+          : null,
+      onVerticalDragEnd: wants(StoryGestureKind.verticalDrag)
+          ? (details) => _dragEnd(StoryDragAxis.vertical, details)
+          : null,
+      onVerticalDragCancel:
+          wants(StoryGestureKind.verticalDrag) ? _cancelOwner : null,
       child: Row(
         children: [
           Expanded(
@@ -183,8 +240,9 @@ class _StoryViewerGestureLayerState extends State<StoryViewerGestureLayer> {
       ),
     );
 
-    if (config.keyboardShortcuts) {
+    if (widget.keyboardShortcuts) {
       final rtl = Directionality.maybeOf(context) == TextDirection.rtl;
+      final dismiss = widget.onDismiss;
       layer = CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.arrowRight):

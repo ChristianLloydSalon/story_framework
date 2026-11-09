@@ -2,7 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../../animations/story_curves.dart';
+import '../../animations/story_transition.dart';
+import '../../animations/story_transition_registry.dart';
+import '../../animations/story_transition_switcher.dart';
 import '../../composition/document/story_document.dart';
+import '../../composition/items/item_timing.dart';
+import '../../composition/items/story_item.dart';
 import '../../configuration/playback/story_playback_config.dart';
 import '../../configuration/viewer/story_viewer_config.dart';
 import '../../core/enums/story_enums.dart';
@@ -10,8 +16,12 @@ import '../../core/errors/story_exceptions.dart';
 import '../../engine/controller/story_controller.dart';
 import '../../engine/lifecycle/story_app_lifecycle_binding.dart';
 import '../../engine/playback/playback_events.dart';
+import '../../engine/state/story_selection.dart';
 import '../../engine/widgets/story_playback_selector.dart';
+import '../../gestures/handlers/default_gesture_handlers.dart';
+import '../../gestures/story_gesture_registry.dart';
 import '../../media/contracts/story_media_controller.dart';
+import '../../overlays/story_overlay.dart';
 import '../../rendering/options/story_render_options.dart';
 import '../../rendering/registry/story_renderer_registry.dart';
 import '../../rendering/widgets/story_item_view.dart';
@@ -68,6 +78,9 @@ class StoryViewer extends StatefulWidget {
     this.durationProviders = const {},
     this.config = const StoryViewerConfig(),
     this.registry,
+    this.gestureRegistry,
+    this.transitionRegistry,
+    this.overlays = const [],
     this.renderOptions = const StoryRenderOptions(),
     this.headerBuilder,
     this.footerBuilder,
@@ -87,6 +100,9 @@ class StoryViewer extends StatefulWidget {
     required StoryController this.controller,
     this.config = const StoryViewerConfig(),
     this.registry,
+    this.gestureRegistry,
+    this.transitionRegistry,
+    this.overlays = const [],
     this.renderOptions = const StoryRenderOptions(),
     this.headerBuilder,
     this.footerBuilder,
@@ -128,6 +144,18 @@ class StoryViewer extends StatefulWidget {
   /// Element renderers, or `null` for the built-in ones (owned by the viewer).
   final StoryRendererRegistry? registry;
 
+  /// Gesture handlers, or `null` for the defaults built from [config]
+  /// (owned by the viewer). A supplied registry is used as is; the gesture
+  /// settings in [config] apply only to the defaults.
+  final StoryGestureRegistry? gestureRegistry;
+
+  /// Transitions, or `null` for the built-in presets (owned by the viewer).
+  final StoryTransitionRegistry? transitionRegistry;
+
+  /// App overlays composed above the content, alongside the built-in top bar
+  /// and footer.
+  final List<StoryOverlay> overlays;
+
   /// Rendering options for story content.
   final StoryRenderOptions renderOptions;
 
@@ -165,6 +193,8 @@ class _StoryViewerState extends State<StoryViewer> {
   StoryController? _ownedController;
   StoryController? _active;
   StoryRendererRegistry? _ownedRegistry;
+  StoryGestureRegistry? _ownedGestures;
+  StoryTransitionRegistry? _ownedTransitions;
   StoryAppLifecycleBinding? _lifecycle;
   // Cancelled in _detach whenever the controller changes or on dispose.
   // ignore: cancel_subscriptions
@@ -195,12 +225,52 @@ class _StoryViewerState extends State<StoryViewer> {
       owned.dispose();
       _ownedRegistry = null;
     }
+    final ownedGestures = _ownedGestures;
+    if (ownedGestures != null &&
+        (widget.gestureRegistry != null ||
+            _gestureSettingsChanged(oldWidget.config, widget.config))) {
+      ownedGestures.dispose();
+      _ownedGestures = null;
+    }
+    final ownedTransitions = _ownedTransitions;
+    if (widget.transitionRegistry != null && ownedTransitions != null) {
+      ownedTransitions.dispose();
+      _ownedTransitions = null;
+    }
+  }
+
+  static bool _gestureSettingsChanged(
+          StoryViewerConfig a, StoryViewerConfig b) =>
+      a.previousTapFraction != b.previousTapFraction ||
+      a.dismissDistance != b.dismissDistance ||
+      a.longPressToPause != b.longPressToPause ||
+      a.swipeBetweenGroups != b.swipeBetweenGroups ||
+      a.swipeDownToDismiss != b.swipeDownToDismiss;
+
+  StoryGestureRegistry _defaultGestures() {
+    final config = widget.config;
+    final registry = StoryGestureRegistry.withDefaults(
+      previousTapFraction: config.previousTapFraction,
+      dismissDistance: config.dismissDistance,
+    );
+    if (!config.longPressToPause) {
+      registry.setEnabled(StoryHoldToPauseHandler.handlerId, enabled: false);
+    }
+    if (!config.swipeBetweenGroups) {
+      registry.setEnabled(StorySwipeGroupsHandler.handlerId, enabled: false);
+    }
+    if (!config.swipeDownToDismiss) {
+      registry.setEnabled(StorySwipeDismissHandler.handlerId, enabled: false);
+    }
+    return registry;
   }
 
   @override
   void dispose() {
     _detach(disposeOwned: true);
     _ownedRegistry?.dispose();
+    _ownedGestures?.dispose();
+    _ownedTransitions?.dispose();
     super.dispose();
   }
 
@@ -258,18 +328,26 @@ class _StoryViewerState extends State<StoryViewer> {
     }
     final registry = widget.registry ??
         (_ownedRegistry ??= StoryRendererRegistry.withDefaults());
+    final gestures =
+        widget.gestureRegistry ?? (_ownedGestures ??= _defaultGestures());
+    final transitions = widget.transitionRegistry ??
+        (_ownedTransitions ??= StoryTransitionRegistry.withDefaults());
 
     final parts = StoryViewerParts(
       controller: controller,
       content: _StoryViewerContent(
         controller: controller,
         registry: registry,
+        transitions: transitions,
         options: widget.renderOptions,
+        config: widget.config,
       ),
       gestures: StoryViewerGestureLayer(
         controller: controller,
-        config: widget.config,
+        registry: gestures,
         onDismiss: widget.onDismiss,
+        keyboardShortcuts: widget.config.keyboardShortcuts,
+        previousButtonFraction: widget.config.previousTapFraction,
       ),
       statusOverlay: _StoryViewerStatusOverlay(
         controller: controller,
@@ -282,6 +360,7 @@ class _StoryViewerState extends State<StoryViewer> {
           StoryViewerHeader(controller: controller, onClose: widget.onDismiss),
       footer: widget.footerBuilder?.call(context, controller) ??
           const SizedBox.shrink(),
+      overlays: widget.overlays,
     );
 
     return widget.layoutBuilder?.call(context, parts) ??
@@ -289,34 +368,126 @@ class _StoryViewerState extends State<StoryViewer> {
   }
 }
 
-/// The current item, rebuilt only when the location changes.
-class _StoryViewerContent extends StatelessWidget {
+/// The current item, rebuilt only when the location changes, animated with
+/// the configured transition.
+class _StoryViewerContent extends StatefulWidget {
   const _StoryViewerContent({
     required this.controller,
     required this.registry,
+    required this.transitions,
     required this.options,
+    required this.config,
   });
 
   final StoryController controller;
   final StoryRendererRegistry registry;
+  final StoryTransitionRegistry transitions;
   final StoryRenderOptions options;
+  final StoryViewerConfig config;
+
+  @override
+  State<_StoryViewerContent> createState() => _StoryViewerContentState();
+}
+
+class _StoryViewerContentState extends State<_StoryViewerContent> {
+  StorySelection<(int, int)>? _selection;
+  (int, int)? _location;
+  (int, int)? _previous;
+
+  @override
+  void initState() {
+    super.initState();
+    _attach();
+  }
+
+  @override
+  void didUpdateWidget(_StoryViewerContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _detach();
+      _previous = null;
+      _attach();
+    }
+  }
+
+  @override
+  void dispose() {
+    _detach();
+    super.dispose();
+  }
+
+  void _attach() {
+    if (widget.controller.isDisposed) return;
+    final selection = widget.controller
+        .select((state) => (state.groupIndex, state.itemIndex))
+      ..addListener(_onLocationChanged);
+    _selection = selection;
+    _location = selection.value;
+  }
+
+  void _detach() {
+    final selection = _selection;
+    if (selection == null) return;
+    selection
+      ..removeListener(_onLocationChanged)
+      ..dispose();
+    _selection = null;
+  }
+
+  void _onLocationChanged() {
+    final selection = _selection;
+    if (selection == null) return;
+    setState(() {
+      _previous = _location;
+      _location = selection.value;
+    });
+  }
+
+  /// The transition into [item] at [location], or `null` to cut.
+  StoryTransitionConfiguration? _transitionInto(
+      (int, int) location, StoryItem item) {
+    final previous = _previous;
+    if (previous == null || previous == location) return null;
+    final config = widget.config;
+    final chosen = previous.$1 != location.$1
+        ? config.groupTransition
+        : item.transition ?? config.itemTransition;
+    if (chosen == null) return null;
+    return config.reducesMotion(context)
+        ? config.reducedMotionTransition
+        : chosen;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StoryPlaybackSelector<(int, int)>(
-      controller: controller,
-      selector: (state) => (state.groupIndex, state.itemIndex),
-      builder: (context, location, _) {
-        final item = controller.currentItem;
-        if (item == null) return const SizedBox.shrink();
-        return StoryItemView(
-          key: ValueKey(('story-item', location.$1, item.id)),
-          document: controller.document,
-          item: item,
-          registry: registry,
-          options: options,
-        );
-      },
+    final controller = widget.controller;
+    final item = controller.currentItem;
+    final location = _location;
+    if (item == null || location == null) return const SizedBox.shrink();
+
+    final transition = _transitionInto(location, item);
+    final previous = _previous;
+    final backward = previous != null &&
+        (previous.$1 > location.$1 ||
+            (previous.$1 == location.$1 && previous.$2 > location.$2));
+
+    return StoryTransitionSwitcher(
+      childKey: ('story-item', location.$1, item.id),
+      transition: transition == null
+          ? null
+          : widget.transitions.resolve(transition.type),
+      duration: transition?.duration ?? Duration.zero,
+      curve: storyCurveNamed(transition?.curve ?? 'easeInOut'),
+      direction: backward
+          ? StoryTransitionDirection.backward
+          : StoryTransitionDirection.forward,
+      parameters: transition?.parameters ?? const {},
+      child: StoryItemView(
+        document: controller.document,
+        item: item,
+        registry: widget.registry,
+        options: widget.options,
+      ),
     );
   }
 }

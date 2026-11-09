@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../composition/items/item_timing.dart';
 import '../../core/errors/story_exceptions.dart';
 
 /// How the viewer fits into the screen.
@@ -9,6 +10,18 @@ enum StoryViewerLayout {
 
   /// Embedded in other content; overlays use the viewer's own bounds.
   inline,
+}
+
+/// Whether the viewer animates transitions and overlay changes.
+enum StoryMotionPreference {
+  /// Follow the platform's reduce-motion accessibility setting.
+  system,
+
+  /// Always use reduced motion.
+  reduced,
+
+  /// Always animate fully.
+  full,
 }
 
 /// Presentation and interaction settings for `StoryViewer`.
@@ -28,6 +41,16 @@ final class StoryViewerConfig {
     this.swipeDownToDismiss = true,
     this.dismissDistance = 120,
     this.keyboardShortcuts = true,
+    this.itemTransition,
+    this.groupTransition = const StoryTransitionConfiguration.preset(
+      'cube',
+      duration: Duration(milliseconds: 400),
+    ),
+    this.reducedMotionTransition = const StoryTransitionConfiguration.preset(
+      'fade',
+      duration: Duration(milliseconds: 150),
+    ),
+    this.motion = StoryMotionPreference.system,
   });
 
   /// Fullscreen or inline presentation.
@@ -61,6 +84,27 @@ final class StoryViewerConfig {
   /// Whether arrow keys, space, and escape control playback.
   final bool keyboardShortcuts;
 
+  /// Transition between items of the same group, unless the incoming item
+  /// sets its own `StoryItem.transition`. `null` cuts.
+  final StoryTransitionConfiguration? itemTransition;
+
+  /// Transition between groups. `null` cuts.
+  final StoryTransitionConfiguration? groupTransition;
+
+  /// Replaces every transition when motion is reduced. `null` cuts.
+  final StoryTransitionConfiguration? reducedMotionTransition;
+
+  /// Whether to reduce motion.
+  final StoryMotionPreference motion;
+
+  /// Whether motion is reduced in [context], following [motion].
+  bool reducesMotion(BuildContext context) => switch (motion) {
+        StoryMotionPreference.reduced => true,
+        StoryMotionPreference.full => false,
+        StoryMotionPreference.system =>
+          MediaQuery.maybeDisableAnimationsOf(context) ?? false,
+      };
+
   /// Throws a [ConfigurationException] if any value is invalid.
   void validate() {
     if (!(previousTapFraction > 0 && previousTapFraction < 1)) {
@@ -69,6 +113,16 @@ final class StoryViewerConfig {
     }
     if (!(dismissDistance.isFinite && dismissDistance > 0)) {
       throw const ConfigurationException('dismissDistance must be positive');
+    }
+    for (final transition in [
+      itemTransition,
+      groupTransition,
+      reducedMotionTransition,
+    ]) {
+      if (transition != null && transition.duration < Duration.zero) {
+        throw const ConfigurationException(
+            'Transition durations cannot be negative');
+      }
     }
   }
 
@@ -84,6 +138,10 @@ final class StoryViewerConfig {
     bool? swipeDownToDismiss,
     double? dismissDistance,
     bool? keyboardShortcuts,
+    StoryTransitionConfiguration? itemTransition,
+    StoryTransitionConfiguration? groupTransition,
+    StoryTransitionConfiguration? reducedMotionTransition,
+    StoryMotionPreference? motion,
   }) {
     return StoryViewerConfig(
       layout: layout ?? this.layout,
@@ -96,6 +154,11 @@ final class StoryViewerConfig {
       swipeDownToDismiss: swipeDownToDismiss ?? this.swipeDownToDismiss,
       dismissDistance: dismissDistance ?? this.dismissDistance,
       keyboardShortcuts: keyboardShortcuts ?? this.keyboardShortcuts,
+      itemTransition: itemTransition ?? this.itemTransition,
+      groupTransition: groupTransition ?? this.groupTransition,
+      reducedMotionTransition:
+          reducedMotionTransition ?? this.reducedMotionTransition,
+      motion: motion ?? this.motion,
     );
   }
 
@@ -111,7 +174,11 @@ final class StoryViewerConfig {
       other.swipeBetweenGroups == swipeBetweenGroups &&
       other.swipeDownToDismiss == swipeDownToDismiss &&
       other.dismissDistance == dismissDistance &&
-      other.keyboardShortcuts == keyboardShortcuts;
+      other.keyboardShortcuts == keyboardShortcuts &&
+      other.itemTransition == itemTransition &&
+      other.groupTransition == groupTransition &&
+      other.reducedMotionTransition == reducedMotionTransition &&
+      other.motion == motion;
 
   @override
   int get hashCode => Object.hash(
@@ -125,5 +192,9 @@ final class StoryViewerConfig {
         swipeDownToDismiss,
         dismissDistance,
         keyboardShortcuts,
+        itemTransition,
+        groupTransition,
+        reducedMotionTransition,
+        motion,
       );
 }

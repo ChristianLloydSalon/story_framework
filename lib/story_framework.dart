@@ -8,12 +8,15 @@
 /// * `package:story_framework/media.dart` — media provider contracts.
 /// * `package:story_framework/engine.dart` — headless playback.
 /// * `package:story_framework/rendering.dart` — renderers and item views.
-/// * `package:story_framework/viewer.dart` — the story viewer.
+/// * `package:story_framework/viewer.dart` — the story viewer, gestures, and
+///   overlays.
+/// * `package:story_framework/animations.dart` — story transitions.
 ///
-/// Editor, animation, and export entry points are added as those modules are
+/// Editor and export entry points are added as those modules are
 /// implemented.
 library;
 
+export 'animations.dart';
 export 'composition.dart';
 export 'engine.dart';
 export 'media.dart';

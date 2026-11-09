@@ -1,5 +1,24 @@
 ## Unreleased
 
+- Gesture system: `StoryGestureHandler` contract, `StoryGestureRegistry`
+  with priorities, newest-first tie breaking, enable/disable, drag and
+  long-press ownership, and cancellation; default tap, hold, swipe-groups,
+  and swipe-dismiss handlers. Recognizers are installed only when a handler
+  needs them.
+- Transition system: `StoryTransition` contract, `StoryTransitionRegistry`,
+  presets (`none`, `fade`, `slide`, `scale`, `zoom`, `cube`,
+  `horizontalReveal`, `verticalReveal`), named curves, and
+  `StoryTransitionSwitcher`, which keeps item state across transitions.
+- Viewer item and group transitions (cube between groups by default),
+  per-item transitions from the document, and reduced-motion support
+  (`StoryMotionPreference`).
+- Overlay system: `StoryOverlay` with alignment, padding, constraints,
+  z-index, safe area, interactivity, touch-to-pause, state-driven visibility,
+  and show/hide callbacks; `StoryOverlayLayer`. The built-in top bar and
+  footer are overlays at z-index 100.
+- `StoryViewer` accepts `gestureRegistry`, `transitionRegistry`, and
+  `overlays`.
+- `StoryTransitionConfiguration.preset` const constructor.
 - `StoryViewer`: plays a document with a segmented progress bar, header
   (group title and close button), optional footer, loading/buffering and error
   overlays with retry, and fullscreen or inline layouts.

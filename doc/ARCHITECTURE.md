@@ -15,8 +15,9 @@ a small number of public entry points.
 | Configuration | `lib/src/configuration/` | Playback only | Immutable configuration objects |
 | Rendering | `lib/src/rendering/` | ✅ | Renderer contract, registry, built-in renderers, item views |
 | Viewer | `lib/src/viewer/` | ✅ basic | `StoryViewer`, progress bar, header, controls, gestures, layout |
-| Gestures | `lib/src/gestures/` | Planned (Phase 5) | Gesture registry and handlers |
-| Animations | `lib/src/animations/` | Planned (Phase 5) | Transition registry and presets |
+| Gestures | `lib/src/gestures/` | ✅ | Gesture events, handler contract, registry, default handlers |
+| Animations | `lib/src/animations/` | ✅ | Transition contract, registry, presets, switcher |
+| Overlays | `lib/src/overlays/` | ✅ | Overlay descriptors and overlay layer |
 | Editor | `lib/src/editor/` | Planned (Phase 8–10) | Editor controller, canvas, tools, history |
 | Export | `lib/src/export/` | Planned (Phase 11) | Exporter registry and pipeline |
 
@@ -68,7 +69,8 @@ exist):
   | `media.dart` | `composition.dart` + media contracts |
   | `engine.dart` | `media.dart` + playback controller, config, clock, events, lifecycle |
   | `rendering.dart` | `composition.dart` + renderers, registry, image resolver, item views |
-  | `viewer.dart` | `engine.dart` + `rendering.dart` + the story viewer and its parts |
+  | `viewer.dart` | `engine.dart` + `rendering.dart` + `animations.dart` + viewer, gestures, overlays |
+  | `animations.dart` | `composition.dart` + transitions |
 
 - Helpers needed only inside the package (for example `JsonReader`,
   `freezeJsonMap`) are not exported.

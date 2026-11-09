@@ -127,6 +127,16 @@ class StoryViewerPage extends StatelessWidget {
           defaultItemDuration: Duration(seconds: 6),
         ),
         footerBuilder: (context, controller) => const ReplyBar(),
+        overlays: [
+          StoryOverlay(
+            id: 'paused',
+            alignment: AlignmentDirectional.center,
+            interactive: false,
+            visibleWhen: (state) =>
+                state.pauseReasons.contains(StoryPauseReason.user),
+            builder: (context, controller) => const PausedBadge(),
+          ),
+        ],
         onDismiss: navigator.pop,
         onComplete: navigator.pop,
       ),
@@ -154,6 +164,25 @@ class ReplyBar extends StatelessWidget {
           'Send message',
           style: TextStyle(color: Colors.white70),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown in the middle of the story while the user holds to pause.
+class PausedBadge extends StatelessWidget {
+  const PausedBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Text('Paused', style: TextStyle(color: Colors.white)),
       ),
     );
   }

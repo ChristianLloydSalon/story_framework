@@ -30,6 +30,10 @@ state-management library.
   tap/hold/swipe/keyboard navigation, loading and error overlays, background
   pausing, fullscreen or inline layout, and replaceable parts. Progress ticks
   repaint only the progress bar.
+- **Customization systems**: a gesture registry with priorities, drag
+  ownership, and cancellation; eight transition presets plus custom
+  transitions, with reduced-motion support; and independently composed
+  overlays with z-order, visibility rules, and touch handling.
 - **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
   using a pluggable renderer registry. Built-in renderers cover images, text,
   stickers, shapes, and drawings, with app-defined widget and custom elements.
@@ -54,7 +58,8 @@ StoryViewer(
 ```
 
 Tap the right side to go forward and the left side to go back. Hold to pause,
-swipe sideways to change groups, and swipe down to dismiss. Keyboard
+swipe sideways to change groups (with a cube transition), and swipe down to
+dismiss. Gestures, transitions, and overlays are all pluggable. Keyboard
 shortcuts and screen-reader buttons are included. The header, footer,
 progress bar, loading and error overlays, or the whole layout can be replaced.
 See the [example app](example/lib/main.dart).
@@ -140,9 +145,10 @@ StoryItemView(
 | `package:story_framework/media.dart` | Media controller contracts |
 | `package:story_framework/engine.dart` | Headless playback controller |
 | `package:story_framework/rendering.dart` | Renderers, registry, and item views |
-| `package:story_framework/viewer.dart` | The story viewer and its parts |
+| `package:story_framework/viewer.dart` | The story viewer, gestures, and overlays |
+| `package:story_framework/animations.dart` | Story transitions |
 
-Editor, animation, and export entry points will be added with their modules.
+Editor and export entry points will be added with their modules.
 
 ## Roadmap
 
@@ -153,7 +159,7 @@ Editor, animation, and export entry points will be added with their modules.
 | 2 | Headless playback engine | ✅ |
 | 3 | Rendering foundation | ✅ |
 | 4 | Story viewer | ✅ |
-| 5 | Advanced viewer customization (gesture and transition registries, overlays) | Planned |
+| 5 | Advanced viewer customization (gesture and transition registries, overlays) | ✅ |
 | 6 | Media integrations and caching | Planned |
 | 7 | Interactive content | Planned |
 | 8–10 | Story editor, tools, timeline, undo/redo | Planned |
@@ -168,5 +174,8 @@ Editor, animation, and export entry points will be added with their modules.
 - [Playback engine](doc/PLAYBACK_ENGINE.md)
 - [Rendering system](doc/RENDERING_SYSTEM.md)
 - [Viewer system](doc/VIEWER_SYSTEM.md)
+- [Gesture system](doc/GESTURE_SYSTEM.md)
+- [Transition system](doc/TRANSITION_SYSTEM.md)
+- [Overlay system](doc/OVERLAY_SYSTEM.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
