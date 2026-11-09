@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_framework/engine.dart';
 
@@ -642,7 +641,7 @@ void main() {
       expect(notifications, 1);
       expect(itemIndex.value, 1);
       itemIndex.removeListener(listener);
-      (itemIndex as ChangeNotifier).dispose();
+      itemIndex.dispose();
     });
   });
 

@@ -13,7 +13,7 @@ import '../../core/errors/story_exceptions.dart';
 import '../../core/models/playback_state.dart';
 import '../../media/contracts/story_media_controller.dart';
 import '../playback/playback_events.dart';
-import '../state/selected_listenable.dart';
+import '../state/story_selection.dart';
 import '../timeline/story_clock.dart';
 
 enum _Phase { idle, loading, ready, completed, error }
@@ -176,9 +176,9 @@ class StoryController {
   /// ```
   ///
   /// Create it once (for example in `initState`) and dispose it when done.
-  ValueListenable<T> select<T>(T Function(StoryPlaybackState state) selector) {
+  StorySelection<T> select<T>(T Function(StoryPlaybackState state) selector) {
     _checkNotDisposed();
-    return SelectedValueListenable<StoryPlaybackState, T>(_state, selector);
+    return StorySelection<T>(_state, selector);
   }
 
   /// Starts or resumes playback by clearing [StoryPauseReason.user].

@@ -6,9 +6,9 @@ Snapchat, or WhatsApp Status — with no forced UI, backend, media provider, or
 state-management library.
 
 > **Status: early development (`0.1.0-dev`).** The shared composition model,
-> serialization, validation, the headless playback engine, and the rendering
-> foundation are implemented. The viewer, editor, and export pipeline are
-> planned; see
+> serialization, validation, the headless playback engine, rendering, and a
+> customizable story viewer are implemented. The editor and export pipeline
+> are planned; see
 > [Roadmap](#roadmap). APIs may change before 1.0.
 
 ## What works today
@@ -26,6 +26,10 @@ state-management library.
 - **Headless playback engine** (`StoryController`): drift-free timeline,
   navigation, independent pause reasons, speed, seeking, media-driven
   durations, lifecycle handling, and safe cancellation on rapid navigation.
+- **Story viewer** (`StoryViewer`): segmented progress, header and footer,
+  tap/hold/swipe/keyboard navigation, loading and error overlays, background
+  pausing, fullscreen or inline layout, and replaceable parts. Progress ticks
+  repaint only the progress bar.
 - **Rendering foundation**: `StoryItemView` draws any item on a scaled canvas,
   using a pluggable renderer registry. Built-in renderers cover images, text,
   stickers, shapes, and drawings, with app-defined widget and custom elements.
@@ -37,7 +41,25 @@ dependencies:
   story_framework: ^0.1.0-dev.1
 ```
 
-## Quick look
+## Show stories
+
+```dart
+import 'package:story_framework/viewer.dart';
+
+StoryViewer(
+  document: document,
+  onDismiss: () => Navigator.pop(context),
+  onComplete: () => Navigator.pop(context),
+)
+```
+
+Tap the right side to go forward and the left side to go back. Hold to pause,
+swipe sideways to change groups, and swipe down to dismiss. Keyboard
+shortcuts and screen-reader buttons are included. The header, footer,
+progress bar, loading and error overlays, or the whole layout can be replaced.
+See the [example app](example/lib/main.dart).
+
+## Build documents
 
 ```dart
 import 'package:story_framework/composition.dart';
@@ -118,9 +140,9 @@ StoryItemView(
 | `package:story_framework/media.dart` | Media controller contracts |
 | `package:story_framework/engine.dart` | Headless playback controller |
 | `package:story_framework/rendering.dart` | Renderers, registry, and item views |
+| `package:story_framework/viewer.dart` | The story viewer and its parts |
 
-Viewer, editor, animation, and export entry points will be added with their
-modules.
+Editor, animation, and export entry points will be added with their modules.
 
 ## Roadmap
 
@@ -130,7 +152,8 @@ modules.
 | 1 | Core domain and composition model | ✅ |
 | 2 | Headless playback engine | ✅ |
 | 3 | Rendering foundation | ✅ |
-| 4–5 | Story viewer and customization | Planned |
+| 4 | Story viewer | ✅ |
+| 5 | Advanced viewer customization (gesture and transition registries, overlays) | Planned |
 | 6 | Media integrations and caching | Planned |
 | 7 | Interactive content | Planned |
 | 8–10 | Story editor, tools, timeline, undo/redo | Planned |
@@ -144,5 +167,6 @@ modules.
 - [Serialization and validation](doc/COMPOSITION_SYSTEM.md)
 - [Playback engine](doc/PLAYBACK_ENGINE.md)
 - [Rendering system](doc/RENDERING_SYSTEM.md)
+- [Viewer system](doc/VIEWER_SYSTEM.md)
 - [API design conventions](doc/API_DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

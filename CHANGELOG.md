@@ -1,5 +1,20 @@
 ## Unreleased
 
+- `StoryViewer`: plays a document with a segmented progress bar, header
+  (group title and close button), optional footer, loading/buffering and error
+  overlays with retry, and fullscreen or inline layouts.
+- Viewer navigation: tap zones (mirrored for right-to-left), press-and-hold to
+  pause, horizontal swipes between groups, swipe down to dismiss, keyboard
+  shortcuts, and screen-reader buttons.
+- `StoryViewerConfig`; builders for every part and a `layoutBuilder` to
+  replace the arrangement; `StoryViewerParts` and `StoryViewerDefaultLayout`.
+- Viewer-owned or external controllers, `initialLocation`, background pausing,
+  and `onComplete`/`onDismiss` callbacks.
+- Progress ticks repaint only the progress bar; content rebuilds only when the
+  item changes.
+- `StoryController.select` now returns a disposable `StorySelection`;
+  `StoryPlaybackSelector` rebuilds widgets from one slice of playback state.
+- Example app.
 - Rendering foundation: `StoryElementRenderer` contract, `StoryRenderContext`,
   and `StoryRendererRegistry` (duplicate checks, explicit replacement,
   ownership-aware unregistering, change notification).
