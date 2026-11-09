@@ -290,8 +290,12 @@ StoryEditorCanvas(controller: editor);  // canvas, handles, and snapping only
 ```
 
 The image and video tools call your own pickers. You can register custom
-tools with `StoryEditorToolRegistry`. See the
-[editor guide](doc/EDITOR_SYSTEM.md).
+tools with `StoryEditorToolRegistry`.
+
+For a phone-style editor, pass `layoutBuilder` and float your own controls
+over `parts.canvas`. `controller.elementDrag` and `controller.dropToDelete`
+add drag-to-trash deletion. Example 11 builds a complete full-screen mobile
+editor this way. See the [editor guide](doc/EDITOR_SYSTEM.md).
 
 ### 7. Save, load, and validate
 
@@ -473,7 +477,8 @@ Notes:
 
 ## Example app
 
-Each of the ten examples above can be run on its own from
+Each of the examples above, plus a full-screen mobile editor (example 11),
+can be run on its own from
 [`example/lib/examples/`](example/lib/examples/):
 
 ```bash

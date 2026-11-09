@@ -1,3 +1,5 @@
+import 'dart:ui' show Offset;
+
 import 'package:flutter/foundation.dart';
 
 import '../../composition/document/story_background.dart';
@@ -146,6 +148,21 @@ class StoryEditorController extends ChangeNotifier {
 
   /// Drawing tool settings.
   final ValueNotifier<StoryBrush> brush = ValueNotifier(const StoryBrush());
+
+  /// The elements the user is dragging on the canvas, and where the pointer
+  /// is, or `null` when nothing is being dragged.
+  ///
+  /// Use it to react to drags outside the canvas, for example to show a
+  /// trash target or hide overlay controls while an element moves.
+  final ValueNotifier<StoryElementDrag?> elementDrag = ValueNotifier(null);
+
+  /// Whether dropping the dragged elements deletes them.
+  ///
+  /// Set it while the pointer is over a delete target (see [elementDrag]).
+  /// On drop the move is discarded and the elements are deleted in one undo
+  /// step, so undo restores them where they were before the drag. It resets
+  /// to `false` when the drag ends.
+  final ValueNotifier<bool> dropToDelete = ValueNotifier(false);
 
   final StoryEditHistory _history;
   StoryDocument _document;
@@ -1063,6 +1080,8 @@ class StoryEditorController extends ChangeNotifier {
     guides.dispose();
     marquee.dispose();
     brush.dispose();
+    elementDrag.dispose();
+    dropToDelete.dispose();
     super.dispose();
   }
 
@@ -1134,4 +1153,29 @@ final class _Transaction {
   final String? currentItemId;
   int depth = 0;
   bool touched = false;
+}
+
+/// Elements being dragged on the editor canvas.
+@immutable
+final class StoryElementDrag {
+  /// Creates a drag description.
+  const StoryElementDrag({
+    required this.elementIds,
+    required this.globalPosition,
+  });
+
+  /// The ids of the moving elements.
+  final List<String> elementIds;
+
+  /// The pointer's position in global (screen) coordinates.
+  final Offset globalPosition;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StoryElementDrag &&
+      listEquals(other.elementIds, elementIds) &&
+      other.globalPosition == globalPosition;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(elementIds), globalPosition);
 }

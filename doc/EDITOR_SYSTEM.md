@@ -127,10 +127,32 @@ The framework has no picker dependencies: `imagePicker`, `videoPicker`, and
 
 `StoryEditor` composes `StoryEditorToolbar`, `StoryEditorCanvas`,
 `StoryLayersPanel`, `StoryPropertiesPanel`, and `StoryTimelinePanel` with
-`StoryEditorDefaultLayout`: a side panel on wide screens, stacked panels on
-narrow ones. Replace any part with `toolbarBuilder`, `layersBuilder`,
-`propertiesBuilder`, or `timelineBuilder`, or rearrange everything with
-`layoutBuilder` (it receives `StoryEditorParts`).
+`StoryEditorDefaultLayout`: a side panel on wide screens, and on narrow
+ones a collapsible Edit/Layers sheet that opens on selection. Replace any
+part with `toolbarBuilder`, `layersBuilder`, `propertiesBuilder`, or
+`timelineBuilder`, or rearrange everything with `layoutBuilder` (it receives
+`StoryEditorParts`).
+
+### Drag-to-delete and other drag-aware UI
+
+`controller.elementDrag` reports the elements being dragged on the canvas
+and the pointer's global position (or `null`). Use it to show a trash
+target, or to hide overlay controls while something moves. While the
+pointer is over your target, set `controller.dropToDelete.value = true`; on
+drop the move is discarded and the elements are deleted in one undo step,
+so undo puts them back where they were before the drag.
+
+```dart
+controller.elementDrag.addListener(() {
+  final drag = controller.elementDrag.value;
+  controller.dropToDelete.value =
+      drag != null && trashRect.contains(drag.globalPosition);
+});
+```
+
+Example 11 (`example/lib/examples/11_mobile_editor/`) builds a full-screen
+phone editor this way: floating tool buttons, an emoji sheet, a drawing
+mode, and a trash target.
 
 ## Accessibility
 

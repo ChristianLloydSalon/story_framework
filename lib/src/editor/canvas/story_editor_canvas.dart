@@ -214,11 +214,14 @@ class _CanvasInputState extends State<_CanvasInput> {
   /// the pointer moves past the touch slop, so drags start from here to
   /// avoid losing that distance.
   Offset _downAt = Offset.zero;
+  Offset _downAtGlobal = Offset.zero;
+  Offset? _pointerGlobal;
 
   StoryToolContext get _context => StoryToolContext(
         controller: widget.controller,
         mapping: widget.mapping,
         additive: HardwareKeyboard.instance.isShiftPressed,
+        globalPosition: _pointerGlobal,
       );
 
   @override
@@ -247,10 +250,11 @@ class _CanvasInputState extends State<_CanvasInput> {
     if (tool == null) return;
     _gesture = _Gesture.tool;
     _dragTool = tool;
-    final context = _context;
-    tool.onDragStart(context, widget.mapping.toCanvas(_downAt));
+    _pointerGlobal = _downAtGlobal;
+    tool.onDragStart(_context, widget.mapping.toCanvas(_downAt));
+    _pointerGlobal = details.focalPoint;
     _lastPoint = widget.mapping.toCanvas(details.localFocalPoint);
-    tool.onDragUpdate(context, _lastPoint);
+    tool.onDragUpdate(_context, _lastPoint);
   }
 
   void _startPinch(Offset focal) {
@@ -266,6 +270,7 @@ class _CanvasInputState extends State<_CanvasInput> {
     }
     switch (_gesture) {
       case _Gesture.tool:
+        _pointerGlobal = details.focalPoint;
         _lastPoint = widget.mapping.toCanvas(details.localFocalPoint);
         _dragTool?.onDragUpdate(_context, _lastPoint);
       case _Gesture.pinch:
@@ -300,7 +305,10 @@ class _CanvasInputState extends State<_CanvasInput> {
     final tool = widget.tool;
     return Listener(
       onPointerSignal: _pointerSignal,
-      onPointerDown: (event) => _downAt = event.localPosition,
+      onPointerDown: (event) {
+        _downAt = event.localPosition;
+        _downAtGlobal = event.position;
+      },
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapUp: tool == null

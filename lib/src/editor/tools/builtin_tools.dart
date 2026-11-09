@@ -114,6 +114,7 @@ final class StorySelectTool extends StoryEditorTool {
     controller.beginTransaction('Move');
     _originals = {for (final e in moving) e.id: e.transform};
     _movingBounds = StoryElementGeometry.unionBounds(_originals.values);
+    _publishDrag(context);
     final canvas = controller.document.canvas;
     _targets = [
       canvas.bounds,
@@ -137,6 +138,7 @@ final class StorySelectTool extends StoryEditorTool {
     }
     final bounds = _movingBounds;
     if (_originals.isEmpty || bounds == null) return;
+    _publishDrag(context);
     var delta = point - origin;
     if (controller.config.snapping) {
       final snap = StorySnapping.snapMove(
@@ -164,9 +166,26 @@ final class StorySelectTool extends StoryEditorTool {
         controller.selectInRect(rect, additive: context.additive);
       }
     } else if (_originals.isNotEmpty) {
-      controller.commitTransaction();
+      if (controller.dropToDelete.value) {
+        // Discard the move first, so undoing the delete restores the
+        // elements where they were before the drag.
+        controller
+          ..cancelTransaction()
+          ..deleteSelection();
+      } else {
+        controller.commitTransaction();
+      }
     }
     _reset(controller);
+  }
+
+  void _publishDrag(StoryToolContext context) {
+    final position = context.globalPosition;
+    if (position == null) return;
+    context.controller.elementDrag.value = StoryElementDrag(
+      elementIds: _originals.keys.toList(growable: false),
+      globalPosition: position,
+    );
   }
 
   @override
@@ -185,6 +204,8 @@ final class StorySelectTool extends StoryEditorTool {
     _marquee = false;
     controller.guides.value = const [];
     controller.marquee.value = null;
+    controller.elementDrag.value = null;
+    controller.dropToDelete.value = false;
   }
 }
 

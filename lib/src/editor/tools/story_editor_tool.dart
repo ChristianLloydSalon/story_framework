@@ -1,3 +1,5 @@
+import 'dart:ui' show Offset;
+
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/story_exceptions.dart';
@@ -14,6 +16,7 @@ final class StoryToolContext {
     required this.controller,
     required this.mapping,
     this.additive = false,
+    this.globalPosition,
   });
 
   /// The editor to change.
@@ -24,6 +27,9 @@ final class StoryToolContext {
 
   /// Whether the user is holding the add-to-selection modifier (Shift).
   final bool additive;
+
+  /// The pointer's position in global (screen) coordinates, when known.
+  final Offset? globalPosition;
 
   /// A screen distance in canvas units, for zoom-independent thresholds.
   double canvasDistance(double screenPixels) =>

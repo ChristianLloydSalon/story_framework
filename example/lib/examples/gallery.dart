@@ -10,6 +10,7 @@ import '07_save_load_validate/main.dart' show saveLoadExample;
 import '08_export/main.dart' show exportExample;
 import '09_headless_playback/main.dart' show headlessExample;
 import '10_custom_renderer/main.dart' show customRendererExample;
+import '11_mobile_editor/main.dart' show mobileEditorExample;
 import 'shared.dart';
 
 /// Every example, from basic to advanced.
@@ -24,6 +25,7 @@ const List<StoryExample> allExamples = [
   exportExample,
   headlessExample,
   customRendererExample,
+  mobileEditorExample,
 ];
 
 /// Lists the examples; tapping one opens it.

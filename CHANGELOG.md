@@ -6,6 +6,13 @@
   selection is cleared, and takes the timeline's place while open, so the
   canvas keeps most of the screen. Layers are now reachable on phones.
   `StoryEditorDefaultLayout` gains `compactTimelineHeight`.
+- Drag-aware editor UI: `StoryEditorController.elementDrag` reports the
+  elements being dragged and the pointer's global position, and
+  `dropToDelete` deletes them on drop in one undo step (undo restores them
+  where they were). `StoryToolContext.globalPosition` gives tools the
+  pointer's screen position.
+- Example 11: a full-screen mobile story editor built with `layoutBuilder`,
+  with floating tool buttons, an emoji sheet, drawing, and drag to trash.
 
 ## 0.1.0
 

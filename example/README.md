@@ -1,6 +1,6 @@
 # Story Framework examples
 
-Ten runnable examples, from basic to advanced, plus a story tray showcase.
+Eleven runnable examples, from basic to advanced, plus a story tray showcase.
 
 This folder has no platform directories, to keep the repository small.
 Generate the ones you need first:
@@ -29,6 +29,7 @@ Or run a single example on its own:
 | 8 | Export to PNG and JSON | `flutter run -t lib/examples/08_export/main.dart` | |
 | 9 | Headless playback (custom player) | `flutter run -t lib/examples/09_headless_playback/main.dart` | |
 | 10 | Custom element and renderer | `flutter run -t lib/examples/10_custom_renderer/main.dart` | |
+| 11 | Mobile story editor (full screen, emoji sheet, drag to trash) | `flutter run -t lib/examples/11_mobile_editor/main.dart` | |
 
 Each folder's `main.dart` holds the whole example. Shared helpers are in
 `lib/examples/shared.dart`.

@@ -115,6 +115,50 @@ void main() {
     expect(controller.elementById('box')?.transform.position.x, 300);
   });
 
+  testWidgets('drags report the moving elements and pointer position',
+      (tester) async {
+    final controller = await pumpCanvas(tester);
+    final drags = <StoryElementDrag?>[];
+    controller.elementDrag
+        .addListener(() => drags.add(controller.elementDrag.value));
+    final gesture = await tester.startGesture(screenOf(300, 400));
+    // Past the touch slop, so the drag has started.
+    await gesture.moveTo(screenOf(450, 400));
+    await tester.pump();
+    await gesture.moveTo(screenOf(470, 420));
+    await tester.pump();
+    final drag = controller.elementDrag.value;
+    expect(drag?.elementIds, ['box']);
+    expect(drag?.globalPosition, screenOf(470, 420));
+
+    await gesture.up();
+    await tester.pump(kDoubleTapTimeout);
+    expect(controller.elementDrag.value, isNull);
+    expect(drags.first?.elementIds, ['box']);
+  });
+
+  testWidgets('dropping on a delete target deletes in one undo step',
+      (tester) async {
+    final controller = await pumpCanvas(tester);
+    final gesture = await tester.startGesture(screenOf(300, 400));
+    await gesture.moveTo(screenOf(400, 900));
+    await tester.pump();
+    // The app's trash target is under the pointer.
+    controller.dropToDelete.value = true;
+    await gesture.up();
+    await tester.pump(kDoubleTapTimeout);
+
+    expect(controller.elementById('box'), isNull);
+    expect(controller.dropToDelete.value, isFalse, reason: 'reset on drop');
+    expect(controller.undoLabel, 'Delete');
+    controller.undo();
+    final restored = controller.elementById('box');
+    expect(restored?.transform.position.x, 300,
+        reason: 'restored where it was before the drag');
+    expect(restored?.transform.position.y, 400);
+    expect(controller.canUndo, isFalse, reason: 'the move left no step');
+  });
+
   testWidgets('drag-selecting empty space selects overlapping elements',
       (tester) async {
     final controller = await pumpCanvas(tester);
