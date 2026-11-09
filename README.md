@@ -23,6 +23,9 @@ dependencies**.
   - Text, sticker, shape, draw, and eraser tools.
   - Layers, a timeline, and undo/redo with transactions.
   - Keyboard shortcuts and accessible panels.
+- **Stickers from any source**:
+  - Emoji, image (animated GIF and WebP), and provider stickers.
+  - Plug in Giphy, Tenor, your own packs, or a custom renderer.
 - **Interactive content**:
   - Polls, quizzes, questions, sliders, countdowns, links, and product tags.
   - Every interaction is reported to your app.
@@ -359,6 +362,84 @@ StoryViewer(document: document, registry: renderers);
 
 Pass the same registry to the editor and the exporters so a custom element
 looks the same everywhere. See the [rendering guide](doc/RENDERING_SYSTEM.md).
+
+## Stickers, GIFs, and emojis from any source
+
+Sticker content isn't tied to a provider. GIFs, emojis, and stickers can come
+from Giphy, Tenor, your own server, a bundled pack, or anything else. There
+are three ways to plug in a source.
+
+**Image stickers from any URL, GIFs included.** Flutter plays animated GIF
+and WebP images, so any host works. Assets, files, and in-memory bytes work
+too, and images share the viewer's cache.
+
+```dart
+StickerElement(
+  id: 'party',
+  transform: const StoryTransform(
+    position: StoryPoint(540, 960),
+    size: StorySize(400, 400),
+  ),
+  sticker: ImageSticker(
+    NetworkStorySource(Uri.parse('https://media.giphy.com/media/<id>/giphy.gif')),
+    animated: true,
+  ),
+)
+```
+
+**Your own source type, resolved when drawn.** Store a stable id instead of
+a URL, for example when URLs expire or need an API key:
+
+```dart
+ImageSticker(CustomStorySource('giphy', data: {'id': 'xT9IgG50Fb7Mi0prBC'}))
+
+final options = StoryRenderOptions(
+  imageResolver: DefaultStoryImageResolver(customResolvers: {
+    'giphy': (source) => NetworkImage(giphyUrlFor(source.data['id'])),
+  }),
+);
+// Pass `options` as `renderOptions` to StoryViewer and StoryEditor.
+```
+
+**Provider stickers drawn by your own widget,** for anything that isn't a
+plain image (Lottie, branded packs, another emoji set):
+
+```dart
+CustomSticker(providerId: 'lottie', stickerId: 'confetti')
+
+// Replaces the built-in sticker renderer; emoji and image stickers still work.
+final renderers = StoryRendererRegistry.withDefaults()
+  ..replace(StoryStickerRenderer(customBuilders: {
+    'lottie': (context, sticker, element, renderContext) =>
+        MyLottieSticker(id: sticker.stickerId),
+  }));
+// Pass `renderers` as `registry` to StoryViewer and as `renderers` to
+// StoryEditor and the exporters.
+```
+
+**Emojis.** `EmojiSticker('🔥')` uses the device's emoji font, so it looks
+different on each platform. For the same look everywhere, use emoji images
+(for example Twemoji or Noto) as `ImageSticker`s or a `CustomSticker` pack.
+
+**Picking stickers in the editor.** Give the sticker tool your own picker,
+such as a Giphy or Tenor search sheet or your sticker packs. It returns the
+chosen `StickerContent`, or `null` if cancelled. Without a picker, the tool
+adds a ⭐.
+
+```dart
+StoryEditor(
+  document: draft,
+  stickerPicker: () => showStickerSheet(context),
+)
+```
+
+Notes:
+
+- PNG and video export capture one frame, so an animated GIF exports as a
+  still image.
+- Giphy and Tenor require their own API and attribution ("Powered by
+  GIPHY"). That integration belongs in your app; the package has no
+  dependency on either.
 
 ## Entry points
 
