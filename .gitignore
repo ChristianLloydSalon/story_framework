@@ -32,3 +32,6 @@ migrate_working_dir/
 
 # Claude Code local worktrees
 .claude/worktrees/
+
+# Raw screen recordings; the README uses the compressed copies in doc/demos/.
+/doc/recording/

@@ -5,11 +5,17 @@ Instagram-style stories for Flutter: a customizable **viewer**, a full
 built on one shared document model and has **no third-party runtime
 dependencies**.
 
-<p>
-  <img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/viewer.png" alt="Story viewer" width="220">
-  <img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/interactive.png" alt="Interactive poll and link stickers" width="220">
-</p>
-<img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/editor.png" alt="Story editor" width="660">
+<table>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/01_basic_story.gif" alt="Basic story demo" width="160"><br><sub>Basic story</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/02_images_and_transitions.gif" alt="Images and transitions demo" width="160"><br><sub>Images and transitions</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/04_interactive_stickers.gif" alt="Interactive stickers demo" width="160"><br><sub>Interactive stickers</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/06_story_editor.gif" alt="Story editor demo" width="160"><br><sub>Story editor</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/10_custom_renderer.gif" alt="Custom renderer demo" width="160"><br><sub>Custom renderer</sub></td>
+  </tr>
+</table>
+
+<img src="https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/screenshots/editor.png" alt="Story editor on a wide screen" width="660">
 
 ## Features
 
@@ -58,6 +64,8 @@ the part you use (see [entry points](#entry-points)).
 
 ### 1. Show a story
 
+[See it in action](https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/01_basic_story.gif)
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:story_framework/story_framework.dart';
@@ -105,6 +113,8 @@ Tap right to go forward and left to go back. Hold to pause, swipe sideways to
 change groups, and swipe down to dismiss.
 
 ### 2. Images, durations, and transitions
+
+[See it in action](https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/02_images_and_transitions.gif)
 
 ```dart
 StoryItem(
@@ -162,6 +172,8 @@ use registries, so you can add your own (see the
 guides).
 
 ### 4. Interactive stickers
+
+[See it in action](https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/04_interactive_stickers.gif)
 
 ```dart
 InteractiveElement(
@@ -249,6 +261,8 @@ StoryViewer(
 ```
 
 ### 6. The story editor
+
+[See it in action](https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/06_story_editor.gif)
 
 ```dart
 import 'package:story_framework/editor.dart';
@@ -340,6 +354,8 @@ it. Pause reasons are tracked separately, so a held overlay and an app going
 to the background never resume each other.
 
 ### 10. Custom elements and renderers
+
+[See it in action](https://raw.githubusercontent.com/ChristianLloydSalon/story_framework/main/doc/demos/10_custom_renderer.gif)
 
 ```dart
 final class ConfettiRenderer extends StoryElementRenderer<CustomElement> {
