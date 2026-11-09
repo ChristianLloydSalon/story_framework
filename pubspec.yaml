@@ -1,0 +1,29 @@
+name: story_framework
+description: >-
+  A customizable Flutter story viewer and editor framework with a shared
+  composition model, headless playback, pluggable rendering, and extensible
+  media, gestures, transitions, and export.
+version: 0.1.0-dev.1
+repository: https://github.com/ChristianLloydSalon/story_framework
+issue_tracker: https://github.com/ChristianLloydSalon/story_framework/issues
+topics:
+  - stories
+  - story-viewer
+  - editor
+  - media
+  - widget
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  collection: ^1.18.0
+  flutter:
+    sdk: flutter
+  meta: ^1.15.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
