@@ -17,6 +17,7 @@ class StoryExampleApp extends StatelessWidget {
     return MaterialApp(
       title: 'Story Framework',
       theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
+      debugShowCheckedModeBanner: false,
       home: const StoryTrayPage(),
     );
   }
