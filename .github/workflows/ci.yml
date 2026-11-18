@@ -27,11 +27,13 @@ jobs:
           channel: stable
           cache: true
 
-      # The example is resolved too: the root analyzer also checks it.
+      # The example and playground are resolved too: the root analyzer also
+      # checks them.
       - name: Resolve dependencies
         run: |
           flutter pub get
           (cd example && flutter pub get)
+          (cd playground && flutter pub get)
 
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
@@ -44,6 +46,10 @@ jobs:
 
       - name: Test example
         working-directory: example
+        run: flutter test
+
+      - name: Test playground
+        working-directory: playground
         run: flutter test
 
       - name: Validate package

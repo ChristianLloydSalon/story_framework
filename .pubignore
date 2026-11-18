@@ -36,6 +36,9 @@ migrate_working_dir/
 # Raw screen recordings; the README uses the compressed copies in doc/demos/.
 /doc/recording/
 
+# The web playground is deployed to Firebase Hosting, not shipped.
+/playground/
+
 # Demo GIFs are shown from GitHub, not shipped in the package.
 /doc/demos/
 

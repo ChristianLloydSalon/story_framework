@@ -1,0 +1,75 @@
+# Builds the playground (playground/) for the web and deploys it to Firebase
+# Hosting: the live site on pushes to main, a temporary preview channel on
+# pull requests (the URL is posted as a PR comment).
+#
+# Needs the FIREBASE_SERVICE_ACCOUNT secret: a service account
+# key JSON for the story-framework project with the Firebase Hosting Admin
+# role. Pull requests from forks get no secrets, so they only build.
+name: Playground
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'playground/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/playground.yml'
+  pull_request:
+    paths:
+      - 'playground/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/playground.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: playground-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write # The Firebase action reports the preview URL as a check.
+      pull-requests: write # ...and as a PR comment.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build
+        working-directory: playground
+        run: |
+          flutter pub get
+          flutter build web --release
+
+      - name: Deploy preview channel
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: story-framework
+          entryPoint: playground
+          expires: 7d
+
+      - name: Deploy live
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: story-framework
+          entryPoint: playground
+          channelId: live
